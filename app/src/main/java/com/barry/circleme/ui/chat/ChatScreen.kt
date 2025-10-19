@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Mic
@@ -26,9 +27,10 @@ import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -78,8 +81,8 @@ fun ChatScreen(
         modifier = modifier.fillMaxSize(),
         topBar = { TopAppBar(title = { Text(recipientName) }) },
         bottomBar = { ChatInputBar(chatViewModel = chatViewModel) }
-    ) {
-        Box(modifier = Modifier.fillMaxSize().background(WhatsAppBackground).padding(it)) {
+    ) { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize().background(WhatsAppBackground).padding(paddingValues)) {
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                 items(messages) { message ->
                     ChatMessageItem(
@@ -92,13 +95,13 @@ fun ChatScreen(
     }
 }
 
-@OptIn(ExperimentalPermissionsApi::class)
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ChatInputBar(chatViewModel: ChatViewModel) {
     val newMessageText by chatViewModel.newMessageText.collectAsState()
     val voiceRecordingState by chatViewModel.voiceRecordingState.collectAsState()
     val context = LocalContext.current
-    val voiceRecorder = remember { VoiceRecorder(context) }
+    val voiceRecorder = remember { VoiceRecorder(context) } // Recorder is now stable
     var recordingFile by remember { mutableStateOf<File?>(null) }
 
     val recordAudioPermissionState = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
@@ -109,11 +112,18 @@ fun ChatInputBar(chatViewModel: ChatViewModel) {
     when (voiceRecordingState) {
         VoiceRecordingState.IDLE -> {
             Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextField(
+                OutlinedTextField(
                     value = newMessageText,
                     onValueChange = { chatViewModel.onNewMessageChange(it) },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text(stringResource(R.string.type_a_message)) }
+                    placeholder = { Text(stringResource(R.string.type_a_message)) },
+                    shape = CircleShape,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    )
                 )
                 Spacer(Modifier.width(8.dp))
                 IconButton(onClick = {
@@ -134,27 +144,39 @@ fun ChatInputBar(chatViewModel: ChatViewModel) {
                 }
             }
         }
+
         VoiceRecordingState.RECORDING -> {
             LaunchedEffect(Unit) {
                 val file = File(context.cacheDir, "voice_message.mp4")
-                voiceRecorder.start(file)
-                recordingFile = file
+                if(voiceRecorder.start(file)) {
+                    recordingFile = file
+                } else {
+                    // Handle recording start failure
+                    chatViewModel.onCancelRecording()
+                }
             }
-            RecordingUI(onStop = { chatViewModel.onPreviewRecording() })
+            RecordingUI(onStop = {
+                voiceRecorder.stop()
+                chatViewModel.onPreviewRecording()
+            })
         }
+
         VoiceRecordingState.PREVIEW -> {
-            voiceRecorder.stop()
             PreviewUI(
                 onSend = {
                     recordingFile?.let { file ->
-                        val duration = getAudioDuration(file, context)
-                        chatViewModel.sendVoiceMessage(file.toUri(), duration)
+                        if (file.exists() && file.length() > 0) {
+                            val duration = getAudioDuration(file, context)
+                            chatViewModel.sendVoiceMessage(file.toUri(), duration)
+                        } else {
+                            chatViewModel.onCancelRecording()
+                        }
                         file.delete()
                     }
                 },
-                onCancel = { 
+                onCancel = {
                     recordingFile?.delete()
-                    chatViewModel.onCancelRecording() 
+                    chatViewModel.onCancelRecording()
                 },
                 recordingFile = recordingFile
             )
@@ -194,8 +216,8 @@ fun PreviewUI(onSend: () -> Unit, onCancel: () -> Unit, recordingFile: File?) {
         IconButton(onClick = onCancel) {
             Icon(Icons.Default.Delete, contentDescription = "Delete recording")
         }
-        // We can add a simple player here later if needed
-        Text("Recording ready") 
+        // TODO: We can add a simple player here later if needed
+        Text("Recording ready to be sent")
         IconButton(onClick = onSend) {
             Icon(Icons.Default.Send, contentDescription = "Send recording")
         }

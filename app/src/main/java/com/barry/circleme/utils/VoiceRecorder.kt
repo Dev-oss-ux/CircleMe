@@ -5,7 +5,6 @@ import android.media.MediaRecorder
 import android.os.Build
 import android.util.Log
 import java.io.File
-import java.io.FileOutputStream
 
 class VoiceRecorder(private val context: Context) {
 
@@ -22,7 +21,8 @@ class VoiceRecorder(private val context: Context) {
                 setAudioSource(MediaRecorder.AudioSource.MIC)
                 setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                 setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-                setOutputFile(FileOutputStream(outputFile).fd)
+                // Use the simpler, more reliable method of setting the output file path
+                setOutputFile(outputFile.absolutePath)
 
                 prepare()
                 start()
@@ -41,7 +41,8 @@ class VoiceRecorder(private val context: Context) {
                 release()
             }
         } catch (e: Exception) {
-            Log.e("VoiceRecorder", "Failed to stop recording", e)
+            // The recorder might have already been stopped or released, or failed to start.
+            Log.w("VoiceRecorder", "Failed to stop recording gracefully", e)
         } finally {
             recorder = null
         }
