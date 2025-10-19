@@ -13,12 +13,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -27,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -66,6 +68,8 @@ fun PostCard(
     var comments by remember { mutableStateOf<List<Comment>>(emptyList()) }
     val likerNames by homeViewModel.likerNames.collectAsState()
     var showLikers by remember { mutableStateOf(false) }
+    var showComments by remember { mutableStateOf(false) }
+    var commentText by remember { mutableStateOf("") }
 
     LaunchedEffect(post.id) {
         Firebase.firestore.collection("posts").document(post.id)
@@ -158,10 +162,10 @@ fun PostCard(
             PostActionButton(
                 icon = Icons.Outlined.ChatBubbleOutline,
                 contentDescription = "Comment",
-                onClick = { /* TODO: Show comments */ }
+                onClick = { showComments = !showComments }
             )
             PostActionButton(
-                icon = Icons.Outlined.Send,
+                icon = Icons.AutoMirrored.Outlined.Send,
                 contentDescription = "Share",
                 onClick = { /* TODO: Share post */ }
             )
@@ -202,15 +206,42 @@ fun PostCard(
                 )
             }
             
-            // --- Comments and Timestamp ---
-             if (comments.isNotEmpty()) {
-                Text(
-                    text = "View all ${comments.size} comments",
-                    color = Color.Gray,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
+            // --- Comments Section ---
+            if (showComments) {
+                Column(modifier = Modifier.padding(top = 8.dp)) {
+                    comments.forEach { comment ->
+                        Row(modifier = Modifier.padding(vertical = 4.dp)) {
+                            Text(
+                                buildAnnotatedString {
+                                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                        append(comment.authorName)
+                                    }
+                                    append(" ")
+                                    append(comment.text)
+                                },
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+                        TextField(
+                            value = commentText,
+                            onValueChange = { commentText = it },
+                            modifier = Modifier.weight(1f),
+                            placeholder = { Text("Add a comment...") }
+                        )
+                        IconButton(onClick = {
+                            if (commentText.isNotBlank()) {
+                                homeViewModel.addComment(post.id, commentText)
+                                commentText = ""
+                            }
+                        }) {
+                            Icon(Icons.Default.Send, contentDescription = "Send comment")
+                        }
+                    }
+                }
             }
+
             Text(
                 text = TimeUtils.formatTimestamp(post.timestamp),
                 color = Color.Gray,
