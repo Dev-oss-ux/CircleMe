@@ -1,5 +1,7 @@
 package com.barry.circleme.ui.home
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,9 +27,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -43,11 +47,18 @@ fun HomeScreen(
 ) {
     val posts by homeViewModel.posts.collectAsState()
     val searchQuery by homeViewModel.searchQuery.collectAsState()
+    val focusManager = LocalFocusManager.current
 
     Scaffold(
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding)) {
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { 
+                    focusManager.clearFocus() 
+                }
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -94,7 +105,7 @@ fun HomeScreen(
             ) {
                 items(posts, key = { it.id }) { post ->
                     PostCard(
-                        post = post,
+                        post = post, 
                         homeViewModel = homeViewModel
                     )
                 }

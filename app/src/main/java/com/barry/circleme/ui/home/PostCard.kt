@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Send
@@ -165,7 +164,7 @@ fun PostCard(
                 onClick = { showComments = !showComments }
             )
             PostActionButton(
-                icon = Icons.AutoMirrored.Outlined.Send,
+                icon = Icons.Default.Send, // Correct, standard Send icon
                 contentDescription = "Share",
                 onClick = { /* TODO: Share post */ }
             )
@@ -207,6 +206,17 @@ fun PostCard(
             }
             
             // --- Comments Section ---
+            if (comments.isNotEmpty()) {
+                Text(
+                    text = "View all ${comments.size} comments",
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .clickable { showComments = true }
+                )
+            }
+            
             if (showComments) {
                 Column(modifier = Modifier.padding(top = 8.dp)) {
                     comments.forEach { comment ->
@@ -234,6 +244,7 @@ fun PostCard(
                             if (commentText.isNotBlank()) {
                                 homeViewModel.addComment(post.id, commentText)
                                 commentText = ""
+                                showComments = false // This will hide the comment section
                             }
                         }) {
                             Icon(Icons.Default.Send, contentDescription = "Send comment")
