@@ -73,6 +73,14 @@ class HomeViewModel : ViewModel() {
         firestore.collection("posts").document(postId).delete()
     }
 
+    fun editPost(postId: String, newText: String) {
+        if (postId.isBlank()) {
+            Log.e("HomeViewModel", "Cannot edit post with blank ID.")
+            return
+        }
+        firestore.collection("posts").document(postId).update("text", newText)
+    }
+
     fun getLikerNames(likedBy: List<String>) {
         if (likedBy.isEmpty()) {
             _likerNames.value = emptyList()

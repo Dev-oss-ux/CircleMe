@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -49,23 +51,29 @@ fun HomeScreen(
         }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { homeViewModel.onSearchQueryChange(it) },
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Search posts...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                shape = CircleShape,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedContainerColor = Color.LightGray,
-                    unfocusedContainerColor = Color.LightGray
+                shape = RoundedCornerShape(32.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F2F5))
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { homeViewModel.onSearchQueryChange(it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Search posts...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent
+                    )
                 )
-            )
-            
+            }
+
             if (posts.isEmpty()) {
                 // TODO: Show a nice empty state message
                 Text("No posts found. Try a different search or be the first to share!")
@@ -78,7 +86,7 @@ fun HomeScreen(
             ) {
                 items(posts, key = { it.id }) { post ->
                     PostCard(
-                        post = post, 
+                        post = post,
                         homeViewModel = homeViewModel
                     )
                 }
