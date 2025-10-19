@@ -3,7 +3,6 @@ package com.barry.circleme.ui.chat
 import android.media.MediaPlayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -49,6 +48,14 @@ fun ChatMessageItem(
 ) {
     val bubbleColor = if (isSentByCurrentUser) WhatsAppGreen else Color.White
     val horizontalArrangement = if (isSentByCurrentUser) androidx.compose.foundation.layout.Arrangement.End else androidx.compose.foundation.layout.Arrangement.Start
+    
+    // This creates the distinctive WhatsApp bubble shape
+    val bubbleShape = RoundedCornerShape(
+        topStart = 16.dp,
+        topEnd = 16.dp,
+        bottomStart = if (isSentByCurrentUser) 16.dp else 0.dp,
+        bottomEnd = if (isSentByCurrentUser) 0.dp else 16.dp
+    )
 
     Row(
         modifier = Modifier
@@ -56,16 +63,14 @@ fun ChatMessageItem(
             .padding(horizontal = 8.dp, vertical = 4.dp),
         horizontalArrangement = horizontalArrangement
     ) {
-        BoxWithConstraints {
-            Surface(
-                color = bubbleColor,
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Box(modifier = Modifier.padding(8.dp).widthIn(max = maxWidth * 0.8f)) {
-                     when (message.type) {
-                        MessageType.TEXT -> TextMessageContent(message)
-                        MessageType.VOICE -> VoiceMessageContent(message)
-                    }
+        Surface(
+            color = bubbleColor,
+            shape = bubbleShape
+        ) {
+            Box(modifier = Modifier.padding(8.dp)) {
+                 when (message.type) {
+                    MessageType.TEXT -> TextMessageContent(message)
+                    MessageType.VOICE -> VoiceMessageContent(message)
                 }
             }
         }
@@ -74,13 +79,16 @@ fun ChatMessageItem(
 
 @Composable
 fun TextMessageContent(message: ChatMessage) {
-    Column {
-        Text(text = message.text ?: "")
+    Row(verticalAlignment = Alignment.Bottom) {
+        Text(
+            text = message.text ?: "",
+            modifier = Modifier.padding(end = 32.dp) // Space for the timestamp
+        )
         Text(
             text = message.timestamp?.let { SimpleDateFormat("HH:mm", Locale.getDefault()).format(it) } ?: "",
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            modifier = Modifier.align(Alignment.End)
+            modifier = Modifier.align(Alignment.Bottom)
         )
     }
 }
@@ -119,7 +127,10 @@ fun VoiceMessageContent(message: ChatMessage) {
         onDispose { mediaPlayer.release() }
     }
 
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.width(200.dp)) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically, 
+        modifier = Modifier.widthIn(min = 180.dp, max = 220.dp)
+    ) {
         IconButton(onClick = {
             if (isPlaying) mediaPlayer.pause() else mediaPlayer.start()
             isPlaying = !isPlaying
@@ -135,11 +146,19 @@ fun VoiceMessageContent(message: ChatMessage) {
                 onValueChange = { currentPosition = it.toLong(); mediaPlayer.seekTo(it.toInt()) },
                 valueRange = 0f..totalDuration.toFloat().coerceAtLeast(0f)
             )
-            Text(
-                text = "${formatDuration(currentPosition)} / ${formatDuration(totalDuration)}",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = formatDuration(currentPosition),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = message.timestamp?.let { SimpleDateFormat("HH:mm", Locale.getDefault()).format(it) } ?: "",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
         }
     }
 }
