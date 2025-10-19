@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -98,7 +99,7 @@ fun ConversationsScreen(
                 ConversationItem(
                     conversation = conversation,
                     currentUserId = currentUserId ?: "",
-                    isUnread = unreadCount > 0,
+                    unreadCount = unreadCount,
                     onClick = { onConversationClick(it) }
                 )
                 Divider()
@@ -107,16 +108,18 @@ fun ConversationsScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConversationItem(
     conversation: Conversation,
     currentUserId: String,
-    isUnread: Boolean,
+    unreadCount: Int,
     onClick: (String) -> Unit
 ) {
     val otherParticipantId = conversation.participantIds.firstOrNull { it != currentUserId } ?: ""
     val otherParticipantName = conversation.participantNames[otherParticipantId] ?: "Unknown User"
     val otherParticipantPhoto = conversation.participantPhotos?.get(otherParticipantId) ?: ""
+    val isUnread = unreadCount > 0
 
     Row(
         modifier = Modifier
@@ -151,12 +154,9 @@ fun ConversationItem(
                 }
             }
             if (isUnread) {
-                 Box(
-                    modifier = Modifier
-                        .size(14.dp)
-                        .background(MaterialTheme.colorScheme.primary, CircleShape)
-                        .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
-                )
+                 Badge {
+                     Text(unreadCount.toString())
+                 }
             }
         }
 
