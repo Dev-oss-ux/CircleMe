@@ -20,8 +20,22 @@ class ConversationsViewModel : ViewModel() {
     private val _conversations = MutableStateFlow<List<Conversation>>(emptyList())
     val conversations = _conversations.asStateFlow()
 
+    private val _users = MutableStateFlow<List<User>>(emptyList())
+    val users = _users.asStateFlow()
+
     init {
         fetchConversations()
+        fetchAllUsers()
+    }
+
+    private fun fetchAllUsers() {
+        val currentUserId = auth.currentUser?.uid ?: return
+        firestore.collection("users")
+            .get()
+            .addOnSuccessListener { documents ->
+                val allUsers = documents.toObjects(User::class.java)
+                _users.value = allUsers.filter { it.uid != currentUserId }
+            }
     }
 
     private fun fetchConversations() {

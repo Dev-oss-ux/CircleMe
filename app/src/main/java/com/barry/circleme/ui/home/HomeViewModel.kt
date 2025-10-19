@@ -2,6 +2,7 @@ package com.barry.circleme.ui.home
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.barry.circleme.data.Comment
 import com.barry.circleme.data.User
 import com.barry.circleme.ui.create_post.Post
@@ -11,15 +12,32 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 
 class HomeViewModel : ViewModel() {
 
     private val firestore = Firebase.firestore
     private val auth = Firebase.auth
 
-    private val _posts = MutableStateFlow<List<Post>>(emptyList())
-    val posts = _posts.asStateFlow()
+    private val _allPosts = MutableStateFlow<List<Post>>(emptyList())
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
+
+    val posts = _searchQuery.combine(_allPosts) { query, posts ->
+        if (query.isBlank()) {
+            posts
+        } else {
+            posts.filter {
+                it.text.contains(query, ignoreCase = true) ||
+                it.authorName.contains(query, ignoreCase = true)
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
 
     private val _likerNames = MutableStateFlow<List<String>>(emptyList())
     val likerNames = _likerNames.asStateFlow()
@@ -38,11 +56,13 @@ class HomeViewModel : ViewModel() {
                 }
 
                 if (snapshots != null) {
-                    // Revert to the stable and correct way of getting objects.
-                    // The @DocumentId annotation on the Post data class will now handle mapping the ID reliably.
-                    _posts.value = snapshots.toObjects(Post::class.java)
+                    _allPosts.value = snapshots.toObjects(Post::class.java)
                 }
             }
+    }
+
+    fun onSearchQueryChange(newQuery: String) {
+        _searchQuery.value = newQuery
     }
 
     fun deletePost(postId: String) {

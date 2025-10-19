@@ -75,8 +75,7 @@ fun MainScreen(appNavController: androidx.navigation.NavController) {
                 ConversationsScreen(
                     onConversationClick = { recipientId ->
                         appNavController.navigate("${Routes.CHAT_SCREEN}/$recipientId")
-                    },
-                    onNewConversationClick = { appNavController.navigate(Routes.FIND_USER_SCREEN) }
+                    }
                 )
              }
             composable(Screen.Profile.route) {

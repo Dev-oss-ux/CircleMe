@@ -15,18 +15,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Comment
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -61,7 +61,6 @@ fun PostCard(
     val isLiked = currentUserId?.let { post.likedBy.contains(it) } ?: false
     var showComments by remember { mutableStateOf(false) }
     var showLikers by remember { mutableStateOf(false) }
-    var commentText by remember { mutableStateOf("") }
 
     LaunchedEffect(post.id) {
         Firebase.firestore.collection("posts").document(post.id)
@@ -80,7 +79,8 @@ fun PostCard(
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -90,28 +90,29 @@ fun PostCard(
                     AsyncImage(
                         model = post.authorPhotoUrl,
                         contentDescription = "Author's profile picture",
-                        modifier = Modifier.size(40.dp).clip(CircleShape)
+                        modifier = Modifier.size(48.dp).clip(CircleShape)
                     )
                 } else {
                     Box(
-                        modifier = Modifier.size(40.dp).background(Color.Gray, CircleShape),
+                        modifier = Modifier.size(48.dp).background(Color.Gray, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(imageVector = Icons.Default.Person, contentDescription = "Default profile picture", tint = Color.White)
                     }
                 }
-                Column(modifier = Modifier.padding(start = 8.dp).weight(1f)) {
-                    Text(text = post.authorName, fontWeight = FontWeight.Bold)
-                    Text(text = TimeUtils.formatTimestamp(post.timestamp), style = MaterialTheme.typography.bodySmall)
+                Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
+                    Text(text = post.authorName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(text = TimeUtils.formatTimestamp(post.timestamp), style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Text(text = post.text)
-            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = post.text, style = MaterialTheme.typography.bodyLarge)
+            Spacer(modifier = Modifier.height(16.dp))
+            
             Row {
-                 Text(
+                Text(
                     text = "${post.likedBy.size} likes", 
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.clickable { 
                         if (post.likedBy.isNotEmpty()) {
                             homeViewModel.getLikerNames(post.likedBy)
@@ -120,8 +121,10 @@ fun PostCard(
                     }
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                Text(text = "${comments.size} comments", style = MaterialTheme.typography.bodySmall)
+                Text(text = "${comments.size} comments", style = MaterialTheme.typography.bodyMedium)
             }
+
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -134,23 +137,7 @@ fun PostCard(
             }
 
             if (showComments) {
-                comments.forEach { comment ->
-                    CommentItem(comment)
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextField(
-                        value = commentText,
-                        onValueChange = { commentText = it },
-                        modifier = Modifier.weight(1f),
-                        placeholder = { Text("Write a comment...") }
-                    )
-                    IconButton(onClick = {
-                        homeViewModel.addComment(post.id, commentText)
-                        commentText = "" // Clear text field
-                    }) {
-                        Icon(Icons.Default.Send, contentDescription = "Send comment")
-                    }
-                }
+                // TODO: Add comments section here
             }
         }
     }
@@ -183,22 +170,6 @@ fun ActionButton(icon: androidx.compose.ui.graphics.vector.ImageVector, text: St
             Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.padding(start = 4.dp))
             Text(text)
-        }
-    }
-}
-
-@Composable
-fun CommentItem(comment: Comment) {
-    Row(modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)) {
-        AsyncImage(
-            model = comment.authorPhotoUrl,
-            contentDescription = "Comment author's profile picture",
-            modifier = Modifier.size(24.dp).clip(CircleShape)
-        )
-        Column(modifier = Modifier.padding(start = 8.dp)) {
-            Text(text = comment.authorName, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodySmall)
-            Text(text = comment.text, style = MaterialTheme.typography.bodyMedium)
-            Text(text = TimeUtils.formatTimestamp(comment.timestamp), style = MaterialTheme.typography.bodySmall)
         }
     }
 }

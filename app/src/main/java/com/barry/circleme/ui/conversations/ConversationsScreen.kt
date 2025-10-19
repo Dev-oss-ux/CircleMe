@@ -17,9 +17,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -27,6 +29,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.barry.circleme.data.Conversation
+import com.barry.circleme.data.User
 import com.barry.circleme.utils.TimeUtils
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -47,21 +53,42 @@ import com.google.firebase.ktx.Firebase
 fun ConversationsScreen(
     modifier: Modifier = Modifier,
     conversationsViewModel: ConversationsViewModel = viewModel(),
-    onConversationClick: (recipientId: String) -> Unit,
-    onNewConversationClick: () -> Unit
+    onConversationClick: (recipientId: String) -> Unit
 ) {
     val conversations by conversationsViewModel.conversations.collectAsState()
+    val users by conversationsViewModel.users.collectAsState()
     val currentUserId = Firebase.auth.currentUser?.uid
+    var showUserMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(title = { Text("Messages") })
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = onNewConversationClick) {
-                Icon(Icons.Default.Add, contentDescription = "New Conversation")
-            }
+            TopAppBar(
+                title = { Text("Messages") },
+                actions = {
+                    Box {
+                        IconButton(onClick = { showUserMenu = !showUserMenu }) {
+                            Icon(Icons.Default.Add, contentDescription = "New Conversation")
+                        }
+                        DropdownMenu(
+                            expanded = showUserMenu,
+                            onDismissRequest = { showUserMenu = false }
+                        ) {
+                            users.forEach { user ->
+                                DropdownMenuItem(
+                                    text = { Text(user.displayName ?: "") },
+                                    onClick = { 
+                                        conversationsViewModel.startConversation(user) { 
+                                            onConversationClick(user.uid)
+                                        }
+                                        showUserMenu = false
+                                     }
+                                )
+                            }
+                        }
+                    }
+                }
+            )
         }
     ) { paddingValues ->
         LazyColumn(modifier = Modifier.padding(paddingValues)) {

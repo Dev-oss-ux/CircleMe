@@ -1,24 +1,29 @@
 package com.barry.circleme.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -33,23 +38,39 @@ fun HomeScreen(
     onCreatePost: () -> Unit
 ) {
     val posts by homeViewModel.posts.collectAsState()
+    val searchQuery by homeViewModel.searchQuery.collectAsState()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(title = { Text(stringResource(id = R.string.app_name)) })
-        },
         floatingActionButton = {
             FloatingActionButton(onClick = onCreatePost) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.create_post_content_description))
             }
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
+        Column(modifier = Modifier.padding(innerPadding)) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { homeViewModel.onSearchQueryChange(it) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                placeholder = { Text("Search posts...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                shape = CircleShape,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedContainerColor = Color.LightGray,
+                    unfocusedContainerColor = Color.LightGray
+                )
+            )
+            
             if (posts.isEmpty()) {
                 // TODO: Show a nice empty state message
-                Text("No posts yet. Be the first to share!")
+                Text("No posts found. Try a different search or be the first to share!")
             }
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),

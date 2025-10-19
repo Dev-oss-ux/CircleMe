@@ -131,7 +131,7 @@ fun VoiceMessageContent(message: ChatMessage) {
 
     Row(
         verticalAlignment = Alignment.CenterVertically, 
-        modifier = Modifier.height(34.dp).width(250.dp)
+        modifier = Modifier.height(48.dp).widthIn(min = 180.dp, max = 250.dp)
     ) {
         IconButton(onClick = {
             if (isPlaying) mediaPlayer.pause() else mediaPlayer.start()
