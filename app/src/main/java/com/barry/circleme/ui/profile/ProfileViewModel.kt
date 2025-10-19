@@ -4,8 +4,10 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.barry.circleme.data.User
+import com.barry.circleme.ui.create_post.Post
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.auth.userProfileChangeRequest
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
@@ -36,8 +38,7 @@ class ProfileViewModel : ViewModel() {
     val signedOut = _signedOut.asStateFlow()
 
     init {
-        fetchUserStats()
-        // Also, fetch the latest user data from Firestore to ensure UI is up-to-date
+        // Fetch the latest user data from Firestore to ensure UI is up-to-date
         auth.currentUser?.uid?.let {
             firestore.collection("users").document(it).addSnapshotListener { snapshot, _ ->
                 val user = snapshot?.toObject(User::class.java)
@@ -45,6 +46,8 @@ class ProfileViewModel : ViewModel() {
                 _photoUrl.value = user?.photoUrl ?: ""
             }
         }
+
+        fetchUserStats()
     }
 
     private fun fetchUserStats() {
@@ -53,7 +56,7 @@ class ProfileViewModel : ViewModel() {
             .whereEqualTo("authorId", user.uid)
             .get()
             .addOnSuccessListener { documents ->
-                val posts = documents.toObjects(Post::class.java)
+                val posts: List<Post> = documents.toObjects(Post::class.java)
                 _postCount.value = posts.size
                 _likeCount.value = posts.sumOf { it.likedBy.size }
             }
@@ -72,7 +75,7 @@ class ProfileViewModel : ViewModel() {
                 storageRef.putFile(uri).await()
                 val downloadUrl = storageRef.downloadUrl.await()
                 _photoUrl.value = downloadUrl.toString()
-                saveProfile() // Immediately save the new photo url to the profile
+                saveProfile() // Immediately save the new photo url
             } catch (e: Exception) {
                 // Handle upload error
             }
@@ -92,13 +95,13 @@ class ProfileViewModel : ViewModel() {
             }
             user.updateProfile(profileUpdates).await()
 
-            // 2. Update user document in Firestore
+            // 2. Update user document in Firestore using the robust set/merge option
             val userUpdates = mapOf(
                 "displayName" to _displayName.value,
                 "photoUrl" to _photoUrl.value
             )
             firestore.collection("users").document(user.uid)
-                .update(userUpdates)
+                .set(userUpdates, SetOptions.merge())
                 .await()
         }
     }
