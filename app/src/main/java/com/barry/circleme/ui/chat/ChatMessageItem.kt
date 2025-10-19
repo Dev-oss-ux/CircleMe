@@ -3,10 +3,12 @@ package com.barry.circleme.ui.chat
 import android.media.MediaPlayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -129,7 +131,7 @@ fun VoiceMessageContent(message: ChatMessage) {
 
     Row(
         verticalAlignment = Alignment.CenterVertically, 
-        modifier = Modifier.widthIn(min = 180.dp, max = 220.dp)
+        modifier = Modifier.height(34.dp).width(250.dp)
     ) {
         IconButton(onClick = {
             if (isPlaying) mediaPlayer.pause() else mediaPlayer.start()
