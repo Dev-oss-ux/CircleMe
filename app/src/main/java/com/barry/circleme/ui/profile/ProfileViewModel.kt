@@ -1,6 +1,7 @@
 package com.barry.circleme.ui.profile
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.barry.circleme.data.User
@@ -52,14 +53,19 @@ class ProfileViewModel : ViewModel() {
 
     private fun fetchUserStats() {
         val user = auth.currentUser ?: return
-        firestore.collection("posts")
-            .whereEqualTo("authorId", user.uid)
-            .get()
-            .addOnSuccessListener { documents ->
+        viewModelScope.launch {
+            try {
+                val documents = firestore.collection("posts")
+                    .whereEqualTo("authorId", user.uid)
+                    .get()
+                    .await()
                 val posts: List<Post> = documents.toObjects(Post::class.java)
                 _postCount.value = posts.size
                 _likeCount.value = posts.sumOf { it.likedBy.size }
+            } catch (e: Exception) {
+                Log.e("ProfileViewModel", "Error fetching user stats", e)
             }
+        }
     }
 
     fun onDisplayNameChange(newName: String) {

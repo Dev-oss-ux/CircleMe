@@ -54,12 +54,14 @@ class ConversationsViewModel : ViewModel() {
                 currentUserId to (currentUser.displayName ?: ""),
                 otherUserId to (user.displayName ?: "")
             ),
-            "lastMessage" to "", // Add a default empty message to ensure the document is created correctly
+            "participantPhotos" to mapOf(
+                currentUserId to (currentUser.photoUrl?.toString() ?: ""),
+                otherUserId to (user.photoUrl ?: "")
+            ),
+            "lastMessage" to "",
             "lastMessageTimestamp" to FieldValue.serverTimestamp()
         )
 
-        // Use set with merge to create the conversation if it doesn't exist,
-        // or just update the timestamp if it does.
         conversationRef.set(conversationData, SetOptions.merge())
             .addOnSuccessListener { 
                 onComplete(conversationId) 
