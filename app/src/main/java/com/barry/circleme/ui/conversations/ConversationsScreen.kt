@@ -1,6 +1,7 @@
 package com.barry.circleme.ui.conversations
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -93,9 +94,11 @@ fun ConversationsScreen(
     ) { paddingValues ->
         LazyColumn(modifier = Modifier.padding(paddingValues)) {
             items(conversations) { conversation ->
+                val unreadCount = conversation.unreadCount[currentUserId] ?: 0
                 ConversationItem(
                     conversation = conversation,
                     currentUserId = currentUserId ?: "",
+                    isUnread = unreadCount > 0,
                     onClick = { onConversationClick(it) }
                 )
                 Divider()
@@ -108,6 +111,7 @@ fun ConversationsScreen(
 fun ConversationItem(
     conversation: Conversation,
     currentUserId: String,
+    isUnread: Boolean,
     onClick: (String) -> Unit
 ) {
     val otherParticipantId = conversation.participantIds.firstOrNull { it != currentUserId } ?: ""
@@ -118,29 +122,40 @@ fun ConversationItem(
         modifier = Modifier
             .fillMaxSize()
             .clickable { onClick(otherParticipantId) }
+            .background(if (isUnread) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (otherParticipantPhoto.isNotBlank()) {
-            AsyncImage(
-                model = otherParticipantPhoto,
-                contentDescription = "Profile picture of $otherParticipantName",
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .background(Color.Gray, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Default profile picture",
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
+        Box(contentAlignment = Alignment.BottomEnd) {
+            if (otherParticipantPhoto.isNotBlank()) {
+                AsyncImage(
+                    model = otherParticipantPhoto,
+                    contentDescription = "Profile picture of $otherParticipantName",
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(Color.Gray, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Default profile picture",
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
+            if (isUnread) {
+                 Box(
+                    modifier = Modifier
+                        .size(14.dp)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
                 )
             }
         }
@@ -150,13 +165,14 @@ fun ConversationItem(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = otherParticipantName,
-                fontWeight = FontWeight.Bold,
+                fontWeight = if (isUnread) FontWeight.Bold else FontWeight.Normal,
                 fontSize = 17.sp
             )
             Text(
                 text = conversation.lastMessage,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
+                color = if (isUnread) MaterialTheme.colorScheme.onSurface else Color.Gray,
+                fontWeight = if (isUnread) FontWeight.Bold else FontWeight.Normal,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

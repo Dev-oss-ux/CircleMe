@@ -20,6 +20,8 @@ class ConversationsViewModel : ViewModel() {
     private val _conversations = MutableStateFlow<List<Conversation>>(emptyList())
     val conversations = _conversations.asStateFlow()
 
+    val hasUnreadMessages = MutableStateFlow(false)
+
     private val _users = MutableStateFlow<List<User>>(emptyList())
     val users = _users.asStateFlow()
 
@@ -48,8 +50,9 @@ class ConversationsViewModel : ViewModel() {
                 if (e != null) {
                     return@addSnapshotListener
                 }
-
-                _conversations.value = snapshots?.toObjects(Conversation::class.java) ?: emptyList()
+                val convs = snapshots?.toObjects(Conversation::class.java) ?: emptyList()
+                _conversations.value = convs
+                hasUnreadMessages.value = convs.any { (it.unreadCount[currentUser.uid] ?: 0) > 0 }
             }
     }
 

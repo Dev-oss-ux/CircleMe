@@ -53,6 +53,8 @@ class ChatViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
             conversationRef = firestore.collection("conversations").document(conversationId)
             fetchMessages()
             fetchRecipientDetails()
+            // Mark messages as read when entering the chat
+            conversationRef?.update("unreadCount.${auth.currentUser?.uid}", 0)
         }
     }
 
@@ -125,7 +127,8 @@ class ChatViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
 
         val conversationUpdate = mapOf(
             lastMessageUpdate,
-            "lastMessageTimestamp" to FieldValue.serverTimestamp()
+            "lastMessageTimestamp" to FieldValue.serverTimestamp(),
+            "unreadCount.${recipientId}" to FieldValue.increment(1) // Increment unread count for the other user
         )
         conversationRef?.update(conversationUpdate)
     }

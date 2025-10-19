@@ -32,20 +32,25 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.barry.circleme.R
 import com.barry.circleme.ui.conversations.ConversationsScreen
+import com.barry.circleme.ui.conversations.ConversationsViewModel
 import com.barry.circleme.ui.home.HomeScreen
 import com.barry.circleme.ui.notifications.NotificationsScreen
 import com.barry.circleme.ui.notifications.NotificationsViewModel
 import com.barry.circleme.ui.profile.ProfileScreen
 
-sealed class Screen(val route: String, val resourceId: Int, val icon: @Composable (Boolean) -> Unit) {
-    object Home : Screen("home", R.string.home, { _ -> Icon(Icons.Filled.Home, contentDescription = null) })
-    object Messages : Screen("messages", R.string.messages, { _ -> Icon(Icons.Filled.Message, contentDescription = null) })
-    object Notifications : Screen("notifications", R.string.notifications, { hasNotification ->
+sealed class Screen(val route: String, val resourceId: Int, val icon: @Composable (Boolean, Boolean) -> Unit) {
+    object Home : Screen("home", R.string.home, { _, _ -> Icon(Icons.Filled.Home, contentDescription = null) })
+    object Messages : Screen("messages", R.string.messages, { hasUnread, _ ->
+        BadgedBox(badge = { if (hasUnread) Badge() }) {
+            Icon(Icons.Filled.Message, contentDescription = null)
+        }
+    })
+    object Notifications : Screen("notifications", R.string.notifications, { _, hasNotification ->
         BadgedBox(badge = { if (hasNotification) Badge() }) {
             Icon(Icons.Filled.Notifications, contentDescription = null)
         }
     })
-    object Profile : Screen("profile", R.string.profile, { _ -> Icon(Icons.Filled.Person, contentDescription = null) })
+    object Profile : Screen("profile", R.string.profile, { _, _ -> Icon(Icons.Filled.Person, contentDescription = null) })
 }
 
 val items = listOf(
@@ -60,7 +65,9 @@ val items = listOf(
 fun MainScreen(appNavController: androidx.navigation.NavController) {
     val navController = rememberNavController()
     val notificationsViewModel: NotificationsViewModel = viewModel()
+    val conversationsViewModel: ConversationsViewModel = viewModel()
     val hasUnreadNotifications by notificationsViewModel.hasUnreadNotifications.collectAsState()
+    val hasUnreadMessages by conversationsViewModel.hasUnreadMessages.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -71,7 +78,7 @@ fun MainScreen(appNavController: androidx.navigation.NavController) {
 
                 bottomNavItems.forEach { screen ->
                     NavigationBarItem(
-                        icon = { screen.icon(hasUnreadNotifications) },
+                        icon = { screen.icon(hasUnreadMessages, hasUnreadNotifications) },
                         label = { Text(stringResource(screen.resourceId)) },
                         selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                         onClick = {

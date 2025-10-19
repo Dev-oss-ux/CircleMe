@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.barry.circleme.data.Comment
+import com.barry.circleme.data.Notification
+import com.barry.circleme.data.NotificationType
 import com.barry.circleme.data.User
 import com.barry.circleme.ui.create_post.Post
 import com.google.firebase.auth.ktx.auth
@@ -99,7 +101,7 @@ class HomeViewModel : ViewModel() {
         _likerNames.value = emptyList()
     }
 
-    fun toggleLike(postId: String) {
+    fun toggleLike(postId: String, postAuthorId: String) {
         if (postId.isBlank()) {
             Log.e("HomeViewModel", "Cannot like post with blank ID.")
             return
@@ -116,6 +118,16 @@ class HomeViewModel : ViewModel() {
                 transaction.update(postRef, "likedBy", FieldValue.arrayRemove(currentUser.uid))
             } else {
                 transaction.update(postRef, "likedBy", FieldValue.arrayUnion(currentUser.uid))
+                if (currentUser.uid != postAuthorId) { // Don't notify for your own likes
+                    val notification = Notification(
+                        userId = postAuthorId,
+                        actorId = currentUser.uid,
+                        actorName = currentUser.displayName ?: "",
+                        postId = postId,
+                        type = NotificationType.LIKE
+                    )
+                    firestore.collection("notifications").add(notification)
+                }
             }
             null // Transaction must return a value
         }.addOnFailureListener { e ->
@@ -123,7 +135,7 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    fun addComment(postId: String, commentText: String) {
+    fun addComment(postId: String, postAuthorId: String, commentText: String) {
         if (postId.isBlank()) {
             Log.e("HomeViewModel", "Cannot comment on post with blank ID.")
             return
@@ -141,5 +153,16 @@ class HomeViewModel : ViewModel() {
         firestore.collection("posts").document(postId)
             .collection("comments")
             .add(comment)
+
+        if (currentUser.uid != postAuthorId) {
+            val notification = Notification(
+                userId = postAuthorId,
+                actorId = currentUser.uid,
+                actorName = currentUser.displayName ?: "",
+                postId = postId,
+                type = NotificationType.COMMENT
+            )
+            firestore.collection("notifications").add(notification)
+        }
     }
 }

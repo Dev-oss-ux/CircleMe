@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Send
@@ -152,19 +153,19 @@ fun PostCard(
                 .padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            PostActionButton(
+            InfoButton(
                 icon = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                contentDescription = "Like",
-                tint = if (isLiked) Color.Red else MaterialTheme.colorScheme.onSurface,
-                onClick = { homeViewModel.toggleLike(post.id) }
+                text = post.likedBy.size.toString(),
+                onClick = { homeViewModel.toggleLike(post.id, post.authorId) },
+                tint = if (isLiked) Color.Red else MaterialTheme.colorScheme.onSurface
             )
-            PostActionButton(
+            InfoButton(
                 icon = Icons.Outlined.ChatBubbleOutline,
-                contentDescription = "Comment",
+                text = comments.size.toString(),
                 onClick = { showComments = !showComments }
             )
             PostActionButton(
-                icon = Icons.Default.Send, // Correct, standard Send icon
+                icon = Icons.AutoMirrored.Outlined.Send,
                 contentDescription = "Share",
                 onClick = { /* TODO: Share post */ }
             )
@@ -178,19 +179,6 @@ fun PostCard(
 
         // --- Likes and Caption ---
         Column(modifier = Modifier.padding(horizontal = 12.dp)) {
-            if (post.likedBy.isNotEmpty()) {
-                Text(
-                    text = "${post.likedBy.size} likes",
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyMedium,
-                     modifier = Modifier.clickable { 
-                        if (post.likedBy.isNotEmpty()) {
-                            homeViewModel.getLikerNames(post.likedBy)
-                            showLikers = true
-                        }
-                    }
-                )
-            }
             if (post.text.isNotBlank()) {
                  Text(
                     buildAnnotatedString {
@@ -242,7 +230,7 @@ fun PostCard(
                         )
                         IconButton(onClick = {
                             if (commentText.isNotBlank()) {
-                                homeViewModel.addComment(post.id, commentText)
+                                homeViewModel.addComment(post.id, post.authorId, commentText)
                                 commentText = ""
                                 showComments = false // This will hide the comment section
                             }
@@ -261,6 +249,27 @@ fun PostCard(
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun InfoButton(
+    icon: ImageVector,
+    text: String,
+    onClick: () -> Unit,
+    tint: Color = MaterialTheme.colorScheme.onSurface
+) {
+    TextButton(onClick = onClick) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.padding(start = 4.dp))
+            Text(text, color = tint)
+        }
     }
 }
 
