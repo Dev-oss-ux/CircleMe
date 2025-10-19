@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Comment
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ThumbUp
@@ -22,6 +23,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -61,6 +64,7 @@ fun PostCard(
     val isLiked = currentUserId?.let { post.likedBy.contains(it) } ?: false
     var showComments by remember { mutableStateOf(false) }
     var showLikers by remember { mutableStateOf(false) }
+    var showPostMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(post.id) {
         Firebase.firestore.collection("posts").document(post.id)
@@ -103,6 +107,32 @@ fun PostCard(
                 Column(modifier = Modifier.padding(start = 12.dp).weight(1f)) {
                     Text(text = post.authorName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(text = TimeUtils.formatTimestamp(post.timestamp), style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                }
+                if (post.authorId == currentUserId) {
+                    Box {
+                        IconButton(onClick = { showPostMenu = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Post options")
+                        }
+                        DropdownMenu(
+                            expanded = showPostMenu,
+                            onDismissRequest = { showPostMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Edit") },
+                                onClick = { 
+                                    // TODO: Implement edit post
+                                    showPostMenu = false 
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Delete") },
+                                onClick = { 
+                                    homeViewModel.deletePost(post.id)
+                                    showPostMenu = false
+                                }
+                            )
+                        }
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
