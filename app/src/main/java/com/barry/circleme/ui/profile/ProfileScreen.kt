@@ -4,55 +4,61 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ShoppingBag
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddBox
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.outlined.AccountBox
+import androidx.compose.material.icons.outlined.VideoLibrary
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.barry.circleme.R
+import com.barry.circleme.data.User
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,8 +70,9 @@ fun ProfileScreen(
     val displayName by profileViewModel.displayName.collectAsState()
     val photoUrl by profileViewModel.photoUrl.collectAsState()
     val postCount by profileViewModel.postCount.collectAsState()
-    val likeCount by profileViewModel.likeCount.collectAsState()
+    val userPostsWithImages by profileViewModel.userPostsWithImages.collectAsState()
     val signedOut by profileViewModel.signedOut.collectAsState()
+    val user by profileViewModel.user.collectAsState()
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -81,96 +88,122 @@ fun ProfileScreen(
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("") },
-                navigationIcon = {
-                    IconButton(onClick = { /* TODO: Handle back press */ }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
+                title = { Text(user?.username ?: "", fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = { /* TODO: Handle edit profile */ }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit Profile")
+                    IconButton(onClick = { /* TODO */ }) {
+                        Icon(Icons.Default.AddBox, contentDescription = "Add Post")
+                    }
+                    IconButton(onClick = { /* TODO */ }) {
+                        Icon(Icons.Default.Menu, contentDescription = "Menu")
                     }
                 }
             )
-        }
-    ) {
+        },
+    ) { paddingValues ->
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(it)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
         ) {
-            Box(modifier = Modifier.clickable { imagePickerLauncher.launch("image/*") }) {
-                AsyncImage(
-                    model = photoUrl,
-                    contentDescription = "Profile Picture",
-                    placeholder = painterResource(id = R.drawable.ic_launcher_foreground), // Placeholder image
-                    error = painterResource(id = R.drawable.ic_launcher_foreground), // Error image
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                )
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Edit Photo",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .size(32.dp)
-                        .background(MaterialTheme.colorScheme.primary, CircleShape)
-                        .padding(6.dp)
-                )
+            // --- Bio Section ---
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceAround
+                ) {
+                    Box(modifier = Modifier.clickable { imagePickerLauncher.launch("image/*") }) {
+                         AsyncImage(
+                            model = photoUrl,
+                            contentDescription = "Profile Picture",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(CircleShape)
+                                .border(2.dp, Color.Gray, CircleShape)
+                        )
+                         Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Edit Photo",
+                            tint = Color.White,
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .size(28.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                .padding(4.dp)
+                        )
+                    }
+                    StatColumn(title = "Posts", value = postCount.toString())
+                    StatColumn(title = "Followers", value = "0") // Mock data
+                    StatColumn(title = "Following", value = "0") // Mock data
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(displayName, fontWeight = FontWeight.Bold)
+                Text("My awesome bio goes here!", style = MaterialTheme.typography.bodyMedium)
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = displayName, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            Text(text = "California, USA", fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                StatCard(title = "Posts", value = postCount.toString())
-                StatCard(title = "Likes", value = likeCount.toString())
+            
+            // --- Action Buttons ---
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { /* TODO: Edit Profile */ },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)
+                ) {
+                    Text("Edit Profile", color = Color.Black)
+                }
+                 Button(
+                    onClick = { /* TODO: Share Profile */ },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)
+                ) {
+                    Text("Share Profile", color = Color.Black)
+                }
             }
-            Spacer(modifier = Modifier.height(32.dp))
 
-            ProfileOption(icon = Icons.Default.Person, text = "Personal Information")
-            ProfileOption(icon = Icons.Default.ShoppingBag, text = "Your Posts")
-            ProfileOption(icon = Icons.Default.Favorite, text = "Your Favourites")
-            ProfileOption(icon = Icons.Default.Settings, text = "Settings")
-            ProfileOption(
-                icon = Icons.Default.ExitToApp, 
-                text = "Logout",
-                onClick = { profileViewModel.signOut() }
-            )
+            // --- Post Grid ---
+            val (selectedTab, setSelectedTab) = remember { mutableStateOf(0) }
+            TabRow(selectedTabIndex = selectedTab) {
+                Tab(selected = selectedTab == 0, onClick = { setSelectedTab(0) }) {
+                     Icon(Icons.Default.GridView, "Grid", modifier = Modifier.padding(8.dp)) 
+                }
+                Tab(selected = selectedTab == 1, onClick = { setSelectedTab(1) }) {
+                     Icon(Icons.Outlined.VideoLibrary, "Reels", modifier = Modifier.padding(8.dp)) 
+                }
+                Tab(selected = selectedTab == 2, onClick = { setSelectedTab(2) }) {
+                    Icon(Icons.Outlined.AccountBox, "Tagged", modifier = Modifier.padding(8.dp)) 
+                }
+            }
+            
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(3),
+                modifier = Modifier.height(400.dp), // Adjust height as needed
+                userScrollEnabled = false // Disable scrolling for the grid itself
+            ) {
+                items(userPostsWithImages) { post ->
+                    AsyncImage(
+                        model = post.imageUrl,
+                        contentDescription = "User post image",
+                        modifier = Modifier.aspectRatio(1f),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-fun StatCard(title: String, value: String) {
-    Card(
-        modifier = Modifier.padding(8.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(text = title, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
-            Text(text = value, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        }
+fun StatColumn(title: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = value, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text(text = title, fontSize = 14.sp, color = Color.Gray)
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ProfileOption(icon: ImageVector, text: String, onClick: () -> Unit = {}) {
-    ListItem(
-        headlineContent = { Text(text) },
-        leadingContent = { Icon(icon, contentDescription = null) },
-        modifier = Modifier.clickable(onClick = onClick)
-    )
 }

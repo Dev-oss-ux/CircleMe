@@ -1,9 +1,11 @@
 package com.barry.circleme.ui.chat
 
 import android.media.MediaPlayer
-import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +34,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -43,15 +45,17 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatMessageItem(
     message: ChatMessage,
-    isSentByCurrentUser: Boolean
+    isSentByCurrentUser: Boolean,
+    chatViewModel: ChatViewModel
 ) {
     val bubbleColor = if (isSentByCurrentUser) WhatsAppGreen else Color.White
-    val horizontalArrangement = if (isSentByCurrentUser) androidx.compose.foundation.layout.Arrangement.End else androidx.compose.foundation.layout.Arrangement.Start
-    
-    // This creates the distinctive WhatsApp bubble shape
+    val horizontalArrangement = if (isSentByCurrentUser) Arrangement.End else Arrangement.Start
+    var showReactions by remember { mutableStateOf(false) }
+
     val bubbleShape = RoundedCornerShape(
         topStart = 16.dp,
         topEnd = 16.dp,
@@ -59,22 +63,39 @@ fun ChatMessageItem(
         bottomEnd = if (isSentByCurrentUser) 0.dp else 16.dp
     )
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = horizontalArrangement
-    ) {
-        Surface(
-            color = bubbleColor,
-            shape = bubbleShape
+    Column(horizontalAlignment = if (isSentByCurrentUser) Alignment.End else Alignment.Start) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = horizontalArrangement
         ) {
-            Box(modifier = Modifier.padding(8.dp)) {
-                 when (message.type) {
-                    MessageType.TEXT -> TextMessageContent(message)
-                    MessageType.VOICE -> VoiceMessageContent(message)
+            Surface(
+                color = bubbleColor,
+                shape = bubbleShape,
+                modifier = Modifier.combinedClickable(
+                    onClick = { /* TODO */ },
+                    onLongClick = { showReactions = true }
+                )
+            ) {
+                Box(modifier = Modifier.padding(8.dp)) {
+                     when (message.type) {
+                        MessageType.TEXT -> TextMessageContent(message)
+                        MessageType.VOICE -> VoiceMessageContent(message)
+                    }
                 }
             }
+        }
+
+        if (showReactions) {
+            EmojiReactionPicker(onEmojiSelected = {
+                chatViewModel.addReaction(message.id, it)
+                showReactions = false
+            })
+        }
+
+        if (message.reactions.isNotEmpty()) {
+            ReactionsSummary(reactions = message.reactions)
         }
     }
 }
@@ -84,7 +105,7 @@ fun TextMessageContent(message: ChatMessage) {
     Row(verticalAlignment = Alignment.Bottom) {
         Text(
             text = message.text ?: "",
-            modifier = Modifier.padding(end = 32.dp) // Space for the timestamp
+            modifier = Modifier.padding(end = 32.dp)
         )
         Text(
             text = message.timestamp?.let { SimpleDateFormat("HH:mm", Locale.getDefault()).format(it) } ?: "",
@@ -162,6 +183,32 @@ fun VoiceMessageContent(message: ChatMessage) {
                 )
             }
         }
+    }
+}
+
+@Composable
+fun EmojiReactionPicker(onEmojiSelected: (String) -> Unit) {
+    val emojis = listOf("❤️", "😂", "😢", "😮", "👍", "🙏")
+    Card(modifier = Modifier.padding(8.dp)) {
+        Row(modifier = Modifier.padding(8.dp)) {
+            emojis.forEach { emoji ->
+                Text(
+                    text = emoji,
+                    modifier = Modifier.clickable { onEmojiSelected(emoji) }.padding(4.dp),
+                    fontSize = 24.sp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ReactionsSummary(reactions: List<com.barry.circleme.data.Reaction>) {
+    Row(modifier = Modifier.padding(start = 16.dp, top = 4.dp)) {
+        Text(
+            text = reactions.joinToString(" ") { it.emoji },
+            fontSize = 12.sp
+        )
     }
 }
 

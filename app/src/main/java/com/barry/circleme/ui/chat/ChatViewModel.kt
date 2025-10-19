@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.barry.circleme.data.ChatMessage
 import com.barry.circleme.data.MessageType
+import com.barry.circleme.data.Reaction
 import com.barry.circleme.data.User
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentReference
@@ -78,6 +79,13 @@ class ChatViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     fun onStartRecording() { _voiceRecordingState.value = VoiceRecordingState.RECORDING }
     fun onPreviewRecording() { _voiceRecordingState.value = VoiceRecordingState.PREVIEW }
     fun onCancelRecording() { _voiceRecordingState.value = VoiceRecordingState.IDLE }
+
+    fun addReaction(messageId: String, emoji: String) {
+        val currentUser = auth.currentUser ?: return
+        val reaction = Reaction(emoji, currentUser.uid)
+
+        conversationRef?.collection("messages")?.document(messageId)?.update("reactions", FieldValue.arrayUnion(reaction))
+    }
 
     fun sendTextMessage() {
         val currentUser = auth.currentUser

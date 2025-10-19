@@ -23,6 +23,9 @@ class ProfileViewModel : ViewModel() {
     private val firestore = Firebase.firestore
     private val storage = Firebase.storage
 
+    private val _user = MutableStateFlow<User?>(null)
+    val user = _user.asStateFlow()
+
     private val _displayName = MutableStateFlow(auth.currentUser?.displayName ?: "")
     val displayName = _displayName.asStateFlow()
 
@@ -35,14 +38,17 @@ class ProfileViewModel : ViewModel() {
     private val _likeCount = MutableStateFlow(0)
     val likeCount = _likeCount.asStateFlow()
 
+    private val _userPostsWithImages = MutableStateFlow<List<Post>>(emptyList())
+    val userPostsWithImages = _userPostsWithImages.asStateFlow()
+
     private val _signedOut = MutableStateFlow(false)
     val signedOut = _signedOut.asStateFlow()
 
     init {
-        // Fetch the latest user data from Firestore to ensure UI is up-to-date
         auth.currentUser?.uid?.let {
             firestore.collection("users").document(it).addSnapshotListener { snapshot, _ ->
                 val user = snapshot?.toObject(User::class.java)
+                _user.value = user
                 _displayName.value = user?.displayName ?: ""
                 _photoUrl.value = user?.photoUrl ?: ""
             }
@@ -62,6 +68,7 @@ class ProfileViewModel : ViewModel() {
                 val posts: List<Post> = documents.toObjects(Post::class.java)
                 _postCount.value = posts.size
                 _likeCount.value = posts.sumOf { it.likedBy.size }
+                _userPostsWithImages.value = posts.filter { !it.imageUrl.isNullOrBlank() }
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Error fetching user stats", e)
             }
@@ -81,7 +88,7 @@ class ProfileViewModel : ViewModel() {
                 storageRef.putFile(uri).await()
                 val downloadUrl = storageRef.downloadUrl.await()
                 _photoUrl.value = downloadUrl.toString()
-                saveProfile() // Immediately save the new photo url
+                saveProfile() 
             } catch (e: Exception) {
                 // Handle upload error
             }
@@ -92,7 +99,6 @@ class ProfileViewModel : ViewModel() {
         viewModelScope.launch {
             val user = auth.currentUser ?: return@launch
 
-            // 1. Update Firebase Auth profile
             val profileUpdates = userProfileChangeRequest {
                 displayName = _displayName.value
                 if (_photoUrl.value.isNotBlank()) {
@@ -101,7 +107,6 @@ class ProfileViewModel : ViewModel() {
             }
             user.updateProfile(profileUpdates).await()
 
-            // 2. Update user document in Firestore using the robust set/merge option
             val userUpdates = mapOf(
                 "displayName" to _displayName.value,
                 "photoUrl" to _photoUrl.value

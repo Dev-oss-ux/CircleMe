@@ -108,7 +108,8 @@ fun ChatScreen(
                 items(messages) { message ->
                     ChatMessageItem(
                         message = message,
-                        isSentByCurrentUser = message.senderId == currentUserId
+                        isSentByCurrentUser = message.senderId == currentUserId,
+                        chatViewModel = chatViewModel
                     )
                 }
             }
@@ -169,7 +170,6 @@ fun ChatInputBar(chatViewModel: ChatViewModel) {
              Row(
                 modifier = Modifier
                     .padding(horizontal = 8.dp, vertical = 4.dp)
-                    .padding(bottom = 18.dp) // Added bottom padding
                     .background(Color.Transparent),
                 verticalAlignment = Alignment.CenterVertically
             ) {
