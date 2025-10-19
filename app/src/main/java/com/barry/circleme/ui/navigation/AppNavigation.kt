@@ -57,21 +57,18 @@ fun AppNavigation() {
             CreatePostScreen(onPostCreated = { navController.popBackStack() })
         }
         composable(
-            route = "${Routes.CHAT_SCREEN}/{recipientId}/{recipientName}",
+            route = "${Routes.CHAT_SCREEN}/{recipientId}",
             arguments = listOf(
-                navArgument("recipientId") { type = NavType.StringType },
-                navArgument("recipientName") { type = NavType.StringType }
+                navArgument("recipientId") { type = NavType.StringType }
             )
-        ) { backStackEntry ->
-            val recipientName = backStackEntry.arguments?.getString("recipientName") ?: ""
-            ChatScreen(recipientName = recipientName)
+        ) { 
+            ChatScreen(onNavigateBack = { navController.popBackStack() })
         }
         composable(Routes.FIND_USER_SCREEN) {
             val conversationsViewModel: ConversationsViewModel = viewModel()
             FindUserScreen(onUserClick = { user ->
                 conversationsViewModel.startConversation(user) {
-                    val encodedName = URLEncoder.encode(user.displayName ?: "User", StandardCharsets.UTF_8.toString())
-                    navController.navigate("${Routes.CHAT_SCREEN}/${user.uid}/$encodedName")
+                     navController.navigate("${Routes.CHAT_SCREEN}/${user.uid}")
                 }
             })
         }

@@ -24,8 +24,6 @@ import com.barry.circleme.R
 import com.barry.circleme.ui.conversations.ConversationsScreen
 import com.barry.circleme.ui.home.HomeScreen
 import com.barry.circleme.ui.profile.ProfileScreen
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 sealed class Screen(val route: String, val resourceId: Int, val icon: @Composable () -> Unit) {
     object Home : Screen("home", R.string.home, { Icon(Icons.Default.Home, contentDescription = null) })
@@ -75,9 +73,8 @@ fun MainScreen(appNavController: androidx.navigation.NavController) {
             }
             composable(Screen.Messages.route) { 
                 ConversationsScreen(
-                    onConversationClick = { recipientId, recipientName ->
-                        val encodedName = URLEncoder.encode(recipientName, StandardCharsets.UTF_8.toString())
-                        appNavController.navigate("${Routes.CHAT_SCREEN}/$recipientId/$encodedName")
+                    onConversationClick = { recipientId ->
+                        appNavController.navigate("${Routes.CHAT_SCREEN}/$recipientId")
                     },
                     onNewConversationClick = { appNavController.navigate(Routes.FIND_USER_SCREEN) }
                 )

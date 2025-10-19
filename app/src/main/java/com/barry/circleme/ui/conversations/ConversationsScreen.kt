@@ -20,7 +20,6 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -48,7 +47,7 @@ import com.google.firebase.ktx.Firebase
 fun ConversationsScreen(
     modifier: Modifier = Modifier,
     conversationsViewModel: ConversationsViewModel = viewModel(),
-    onConversationClick: (recipientId: String, recipientName: String) -> Unit,
+    onConversationClick: (recipientId: String) -> Unit,
     onNewConversationClick: () -> Unit
 ) {
     val conversations by conversationsViewModel.conversations.collectAsState()
@@ -64,13 +63,13 @@ fun ConversationsScreen(
                 Icon(Icons.Default.Add, contentDescription = "New Conversation")
             }
         }
-    ) {
-        LazyColumn(modifier = Modifier.padding(it)) {
+    ) { paddingValues ->
+        LazyColumn(modifier = Modifier.padding(paddingValues)) {
             items(conversations) { conversation ->
                 ConversationItem(
                     conversation = conversation,
                     currentUserId = currentUserId ?: "",
-                    onClick = { onConversationClick(it.recipientId, it.recipientName) }
+                    onClick = { onConversationClick(it) }
                 )
                 Divider()
             }
@@ -82,7 +81,7 @@ fun ConversationsScreen(
 fun ConversationItem(
     conversation: Conversation,
     currentUserId: String,
-    onClick: (ConversationClickData) -> Unit
+    onClick: (String) -> Unit
 ) {
     val otherParticipantId = conversation.participantIds.firstOrNull { it != currentUserId } ?: ""
     val otherParticipantName = conversation.participantNames[otherParticipantId] ?: "Unknown User"
@@ -91,7 +90,7 @@ fun ConversationItem(
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .clickable { onClick(ConversationClickData(otherParticipantId, otherParticipantName)) }
+            .clickable { onClick(otherParticipantId) }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -147,8 +146,3 @@ fun ConversationItem(
         }
     }
 }
-
-data class ConversationClickData(
-    val recipientId: String,
-    val recipientName: String
-)

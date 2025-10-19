@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.barry.circleme.data.ChatMessage
 import com.barry.circleme.data.MessageType
+import com.barry.circleme.data.User
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FieldValue
@@ -42,12 +43,23 @@ class ChatViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     private val _voiceRecordingState = MutableStateFlow(VoiceRecordingState.IDLE)
     val voiceRecordingState = _voiceRecordingState.asStateFlow()
 
+    private val _recipient = MutableStateFlow<User?>(null)
+    val recipient = _recipient.asStateFlow()
+
     init {
         auth.currentUser?.uid?.let { currentUserId ->
             val conversationId = getConversationId(currentUserId, recipientId)
             conversationRef = firestore.collection("conversations").document(conversationId)
             fetchMessages()
+            fetchRecipientDetails()
         }
+    }
+
+    private fun fetchRecipientDetails() {
+        firestore.collection("users").document(recipientId).get()
+            .addOnSuccessListener { document ->
+                _recipient.value = document.toObject(User::class.java)
+            }
     }
 
     private fun fetchMessages() {
