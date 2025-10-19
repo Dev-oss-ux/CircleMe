@@ -32,7 +32,6 @@ class ConversationsViewModel : ViewModel() {
             .orderBy("lastMessageTimestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshots, e ->
                 if (e != null) {
-                    // Handle error
                     return@addSnapshotListener
                 }
 
@@ -45,28 +44,25 @@ class ConversationsViewModel : ViewModel() {
         val currentUserId = currentUser.uid
         val otherUserId = user.uid
 
-        // Use a predictable conversation ID
         val conversationId = getConversationId(currentUserId, otherUserId)
         val conversationRef = firestore.collection("conversations").document(conversationId)
 
-        // Create a conversation object. We use SetOptions.merge() to create it if it doesn't exist,
-        // or do nothing if it already exists. This avoids a read operation that our rules were blocking.
-        val newConversation = Conversation(
-            id = conversationId,
-            participantIds = listOf(currentUserId, otherUserId).sorted(),
-            participantNames = mapOf(
+        val conversationData = mapOf(
+            "id" to conversationId,
+            "participantIds" to listOf(currentUserId, otherUserId).sorted(),
+            "participantNames" to mapOf(
                 currentUserId to (currentUser.displayName ?: ""),
                 otherUserId to (user.displayName ?: "")
             ),
-            lastMessageTimestamp = null
+            "lastMessage" to "", // Add a default empty message to ensure the document is created correctly
+            "lastMessageTimestamp" to FieldValue.serverTimestamp()
         )
 
-        conversationRef.set(newConversation, SetOptions.merge())
+        // Use set with merge to create the conversation if it doesn't exist,
+        // or just update the timestamp if it does.
+        conversationRef.set(conversationData, SetOptions.merge())
             .addOnSuccessListener { 
-                onComplete(conversationId) // This will now be called reliably.
-            }
-            .addOnFailureListener {
-                // TODO: Handle failure
+                onComplete(conversationId) 
             }
     }
     

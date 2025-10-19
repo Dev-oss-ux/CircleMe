@@ -1,0 +1,45 @@
+# Nom de votre flux de travail, il apparaîtra dans l'onglet "Actions" de votre dépôt GitHub
+name: Android CI
+
+# Déclencheurs : quand ce flux de travail doit-il s'exécuter ?
+on:
+  # S'exécute à chaque fois que vous poussez du code sur la branche 'main'
+  push:
+    branches: [ "main" ]
+  # S'exécute aussi quand une Pull Request est ouverte ou mise à jour vers la branche 'main'
+  pull_request:
+    branches: [ "main" ]
+
+# Les tâches à effectuer
+jobs:
+  # Nous n'avons qu'une seule tâche, que nous appelons 'build'
+  build:
+    # La machine virtuelle sur laquelle la tâche s'exécutera
+    runs-on: ubuntu-latest
+
+    # Les étapes de notre tâche
+    steps:
+      # 1. Récupère le code de votre dépôt
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Configure l'environnement Java (JDK 17 est standard pour les projets Android modernes)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      # 3. Rend le script Gradle exécutable (nécessaire sur les systèmes Linux/Mac)
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 4. Lance les tests unitaires de votre application
+      # Si un test échoue, le flux de travail s'arrêtera ici et sera marqué comme "échoué".
+      - name: Run unit tests
+        run: ./gradlew test
+
+      # 5. Compile l'application en mode "Debug" pour vérifier que tout se construit correctement
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
