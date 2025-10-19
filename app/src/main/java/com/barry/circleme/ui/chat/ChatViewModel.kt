@@ -1,25 +1,36 @@
 package com.barry.circleme.ui.chat
 
+import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.barry.circleme.data.ChatMessage
+import com.barry.circleme.data.MessageType
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+
+enum class VoiceRecordingState {
+    IDLE,
+    RECORDING,
+    PREVIEW
+}
 
 class ChatViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
 
     private val firestore = Firebase.firestore
     private val auth = Firebase.auth
+    private val storage = Firebase.storage
 
     private val recipientId: String = checkNotNull(savedStateHandle["recipientId"])
-    
-    // --- Safe Initialization --- 
     private var conversationRef: DocumentReference? = null
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
@@ -28,8 +39,10 @@ class ChatViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     private val _newMessageText = MutableStateFlow("")
     val newMessageText = _newMessageText.asStateFlow()
 
+    private val _voiceRecordingState = MutableStateFlow(VoiceRecordingState.IDLE)
+    val voiceRecordingState = _voiceRecordingState.asStateFlow()
+
     init {
-        // Only initialize if the user is logged in. Otherwise, the screen will just be empty.
         auth.currentUser?.uid?.let { currentUserId ->
             val conversationId = getConversationId(currentUserId, recipientId)
             conversationRef = firestore.collection("conversations").document(conversationId)
@@ -41,9 +54,7 @@ class ChatViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
         conversationRef?.collection("messages")
             ?.orderBy("timestamp", Query.Direction.ASCENDING)
             ?.addSnapshotListener { snapshots, e ->
-                if (e != null) {
-                    return@addSnapshotListener
-                }
+                if (e != null) { return@addSnapshotListener }
                 _messages.value = snapshots?.toObjects(ChatMessage::class.java) ?: emptyList()
             }
     }
@@ -51,29 +62,52 @@ class ChatViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
     fun onNewMessageChange(newText: String) {
         _newMessageText.value = newText
     }
+    
+    fun onStartRecording() { _voiceRecordingState.value = VoiceRecordingState.RECORDING }
+    fun onPreviewRecording() { _voiceRecordingState.value = VoiceRecordingState.PREVIEW }
+    fun onCancelRecording() { _voiceRecordingState.value = VoiceRecordingState.IDLE }
 
-    fun sendMessage() {
+    fun sendTextMessage() {
         val currentUser = auth.currentUser
         if (currentUser != null && _newMessageText.value.isNotBlank()) {
-            val messageText = _newMessageText.value
             val message = ChatMessage(
                 senderId = currentUser.uid,
                 receiverId = recipientId,
-                text = messageText
+                type = MessageType.TEXT,
+                text = _newMessageText.value
             )
-
-            conversationRef?.collection("messages")?.add(message)
-                ?.addOnSuccessListener { 
-                    _newMessageText.value = "" 
-                }
-
-            // Still update the conversation so it appears in the conversation list
-            val conversationUpdate = mapOf(
-                "lastMessage" to messageText,
-                "lastMessageTimestamp" to FieldValue.serverTimestamp()
-            )
-            conversationRef?.update(conversationUpdate)
+            sendMessage(message, "lastMessage" to _newMessageText.value)
+            _newMessageText.value = ""
         }
+    }
+
+    fun sendVoiceMessage(audioUri: Uri, duration: Long) {
+        viewModelScope.launch {
+            _voiceRecordingState.value = VoiceRecordingState.IDLE
+            val currentUser = auth.currentUser ?: return@launch
+            val storageRef = storage.reference.child("voice_messages/${System.currentTimeMillis()}")
+            val uploadTask = storageRef.putFile(audioUri).await()
+            val downloadUrl = uploadTask.storage.downloadUrl.await().toString()
+
+            val message = ChatMessage(
+                senderId = currentUser.uid,
+                receiverId = recipientId,
+                type = MessageType.VOICE,
+                audioUrl = downloadUrl,
+                duration = duration
+            )
+            sendMessage(message, "lastMessage" to "🎤 Voice Message")
+        }
+    }
+
+    private fun sendMessage(message: ChatMessage, lastMessageUpdate: Pair<String, Any>) {
+        conversationRef?.collection("messages")?.add(message)
+
+        val conversationUpdate = mapOf(
+            lastMessageUpdate,
+            "lastMessageTimestamp" to FieldValue.serverTimestamp()
+        )
+        conversationRef?.update(conversationUpdate)
     }
 
     private fun getConversationId(user1: String, user2: String): String {

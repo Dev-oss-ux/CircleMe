@@ -61,6 +61,9 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("com.google.accompanist:accompanist-navigation-animation:0.34.0")
 
+    // Permissions
+    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
+
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.1.1"))
     implementation("com.google.firebase:firebase-auth")
