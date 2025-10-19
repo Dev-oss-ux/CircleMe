@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "387454465185",
+    "project_id": "circleme-9d331",
+    "storage_bucket": "circleme-9d331.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:387454465185:android:cbe4654e25d9718f652ce0",
+        "android_client_info": {
+          "package_name": "com.barry.circleme"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "387454465185-fhjc3bs5vl6v2iv7bm2bajm1agges3du.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDS0MmxkUtL1YXRrBUiZ_Mz1H1IbJYr2Ls"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "387454465185-fhjc3bs5vl6v2iv7bm2bajm1agges3du.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

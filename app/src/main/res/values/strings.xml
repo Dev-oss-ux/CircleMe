@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">CircleMe</string>
+    <string name="greeting_text">Hello %1$s!</string>
+    <string name="android_name">Android</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="username">Username</string>
+    <string name="sign_up_login">Sign Up / Login</string>
+    <string name="phone_number">Phone Number (Optional)</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="sign_in_with_apple">Sign in with Apple</string>
+    <string name="default_web_client_id" translatable="false">387454465185-fhjc3bs5vl6v2iv7bm2bajm1agges3du.apps.googleusercontent.com</string>
+    <string name="welcome_to_circleme">Welcome to CircleMe!</string>
+    <string name="whats_on_your_mind">What\'s on your mind?</string>
+    <string name="post">Post</string>
+    <string name="create_post_content_description">Create Post</string>
+    <string name="create_your_first_circle">Create your first Circle</string>
+    <string name="circle_name">Circle Name</string>
+    <string name="create_circle">Create Circle</string>
+    <string name="invite_friends">Invite Friends</string>
+    <string name="type_a_message">Type a message</string>
+    <string name="send">Send</string>
+    <string name="home">Home</string>
+    <string name="messages">Messages</string>
+    <string name="profile">Profile</string>
+    <string name="sign_in">Sign In</string>
+    <string name="remember_me">Remember me</string>
+    <string name="forgot_password">Forgot Password?</string>
+    <string name="login">LOGIN</string>
+</resources>
