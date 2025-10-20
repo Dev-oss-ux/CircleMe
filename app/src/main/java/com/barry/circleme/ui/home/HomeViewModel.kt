@@ -223,4 +223,24 @@ class HomeViewModel : ViewModel() {
             Log.e("HomeViewModel", "Reply to comment transaction failed", e)
         }
     }
+
+    fun deletePost(postId: String) {
+        viewModelScope.launch {
+            try {
+                firestore.collection("posts").document(postId).delete().await()
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error deleting post", e)
+            }
+        }
+    }
+
+    fun updatePost(postId: String, newText: String) {
+        viewModelScope.launch {
+            try {
+                firestore.collection("posts").document(postId).update("text", newText).await()
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error updating post", e)
+            }
+        }
+    }
 }

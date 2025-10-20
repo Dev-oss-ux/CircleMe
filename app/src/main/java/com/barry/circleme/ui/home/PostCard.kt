@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -71,6 +72,9 @@ fun PostCard(
     val isLiked = currentUserId?.let { post.likedBy.contains(it) } ?: false
     val isBookmarked = currentUser?.bookmarkedPosts?.contains(post.id) ?: false
     var showPostMenu by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var updatedText by remember { mutableStateOf(post.text) }
     var comments by remember { mutableStateOf<List<Comment>>(emptyList()) }
     val likerNames by homeViewModel.likerNames.collectAsState()
     var showLikers by remember { mutableStateOf(false) }
@@ -93,6 +97,54 @@ fun PostCard(
             .addSnapshotListener { snapshots, _ ->
                 comments = snapshots?.toObjects(Comment::class.java) ?: emptyList()
             }
+    }
+
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Edit Post") },
+            text = {
+                TextField(
+                    value = updatedText,
+                    onValueChange = { updatedText = it },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(onClick = { 
+                    homeViewModel.updatePost(post.id, updatedText)
+                    showEditDialog = false
+                 }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showEditDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Post") },
+            text = { Text("Are you sure you want to delete this post?") },
+            confirmButton = {
+                Button(onClick = { 
+                    homeViewModel.deletePost(post.id)
+                    showDeleteDialog = false
+                 }) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                Button(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Card(
@@ -132,8 +184,12 @@ fun PostCard(
                 ) {
                     if (post.authorId == currentUserId) {
                         DropdownMenuItem(
+                            text = { Text("Edit") },
+                            onClick = { showEditDialog = true }
+                        )
+                        DropdownMenuItem(
                             text = { Text("Delete") },
-                            onClick = { /* TODO: Delete Post */ }
+                            onClick = { showDeleteDialog = true }
                         )
                     } else {
                         DropdownMenuItem(
