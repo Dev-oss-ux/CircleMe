@@ -112,6 +112,21 @@ class HomeViewModel : ViewModel() {
         }
     }
 
+    fun createStory(storyText: String) {
+        viewModelScope.launch {
+            val currentUser = auth.currentUser ?: return@launch
+
+            val story = Story(
+                userId = currentUser.uid,
+                username = currentUser.displayName ?: "",
+                userProfilePictureUrl = currentUser.photoUrl?.toString(),
+                text = storyText
+            )
+
+            firestore.collection("stories").add(story).await()
+        }
+    }
+
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
     }

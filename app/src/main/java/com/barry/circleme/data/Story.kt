@@ -9,6 +9,7 @@ data class Story(
     val userId: String = "",
     val username: String = "",
     val userProfilePictureUrl: String? = null,
-    val imageUrl: String = "",
+    val imageUrl: String? = null,
+    val text: String? = null,
     @ServerTimestamp val timestamp: Date? = null
 )
