@@ -77,7 +77,31 @@ fun MainScreen(appNavController: NavController) {
                 val currentDestination = navBackStackEntry?.destination
 
                 // Items 1 & 2
-                bottomBarItems.forEach { screen ->
+                bottomBarItems.take(2).forEach { screen ->
+                    NavigationBarItem(
+                        icon = { screen.icon(totalUnreadMessages, hasUnreadNotifications) },
+                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                        onClick = {
+                            navController.navigate(screen.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    )
+                }
+
+                // Item 3: The Create Post Button
+                NavigationBarItem(
+                    selected = false,
+                    onClick = { appNavController.navigate(Routes.CREATE_POST_SCREEN) },
+                    icon = { Icon(Icons.Filled.AddCircle, contentDescription = "Create Post", modifier = Modifier.size(36.dp)) }
+                )
+
+                // Items 4 & 5
+                bottomBarItems.takeLast(2).forEach { screen ->
                     NavigationBarItem(
                         icon = { screen.icon(totalUnreadMessages, hasUnreadNotifications) },
                         selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
