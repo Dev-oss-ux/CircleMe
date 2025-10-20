@@ -20,7 +20,8 @@ class ConversationsViewModel : ViewModel() {
     private val _conversations = MutableStateFlow<List<Conversation>>(emptyList())
     val conversations = _conversations.asStateFlow()
 
-    val hasUnreadMessages = MutableStateFlow(false)
+    private val _totalUnreadCount = MutableStateFlow(0)
+    val totalUnreadCount = _totalUnreadCount.asStateFlow()
 
     private val _users = MutableStateFlow<List<User>>(emptyList())
     val users = _users.asStateFlow()
@@ -52,7 +53,7 @@ class ConversationsViewModel : ViewModel() {
                 }
                 val convs = snapshots?.toObjects(Conversation::class.java) ?: emptyList()
                 _conversations.value = convs
-                hasUnreadMessages.value = convs.any { (it.unreadCount[currentUser.uid] ?: 0) > 0 }
+                _totalUnreadCount.value = convs.sumOf { (it.unreadCount[currentUser.uid] ?: 0L).toInt() }
             }
     }
 

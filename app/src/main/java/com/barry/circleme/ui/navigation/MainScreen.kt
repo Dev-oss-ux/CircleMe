@@ -16,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -43,11 +44,11 @@ import com.barry.circleme.ui.settings.SettingsScreen
 
 sealed class Screen(
     val route: String,
-    val icon: @Composable (Boolean, Boolean) -> Unit
+    val icon: @Composable (Int, Boolean) -> Unit
 ) {
     object Home : Screen(Routes.HOME_SCREEN, { _, _ -> Icon(Icons.Filled.Home, contentDescription = null) })
-    object Messages : Screen(Routes.MESSAGES_SCREEN, { hasUnread, _ ->
-        BadgedBox(badge = { if (hasUnread) Badge() }) {
+    object Messages : Screen(Routes.MESSAGES_SCREEN, { unreadCount, _ ->
+        BadgedBox(badge = { if (unreadCount > 0) Badge { Text(unreadCount.toString()) } }) {
             Icon(Icons.Filled.Message, contentDescription = null)
         }
     })
@@ -65,8 +66,8 @@ fun MainScreen(appNavController: NavController) {
     val navController = rememberNavController()
     val notificationsViewModel: NotificationsViewModel = viewModel()
     val conversationsViewModel: ConversationsViewModel = viewModel()
-    val hasUnreadNotifications by notificationsViewModel.hasUnreadNotifications.collectAsState()
-    val hasUnreadMessages by conversationsViewModel.hasUnreadMessages.collectAsState()
+    val hasUnreadNotifications by notificationsViewModel.hasUnreadNotifications.collectAsState(initial = false)
+    val totalUnreadMessages by conversationsViewModel.totalUnreadCount.collectAsState(initial = 0)
     val bottomBarItems = listOf(Screen.Home, Screen.Messages, Screen.Notifications, Screen.Profile)
 
     Scaffold(
@@ -76,33 +77,9 @@ fun MainScreen(appNavController: NavController) {
                 val currentDestination = navBackStackEntry?.destination
 
                 // Items 1 & 2
-                bottomBarItems.take(2).forEach { screen ->
+                bottomBarItems.forEach { screen ->
                     NavigationBarItem(
-                        icon = { screen.icon(hasUnreadMessages, hasUnreadNotifications) },
-                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
-                    )
-                }
-
-                // Item 3: The Create Post Button
-                NavigationBarItem(
-                    selected = false,
-                    onClick = { appNavController.navigate(Routes.CREATE_POST_SCREEN) },
-                    icon = { Icon(Icons.Filled.AddCircle, contentDescription = "Create Post", modifier = Modifier.size(36.dp)) }
-                )
-
-                // Items 4 & 5
-                bottomBarItems.takeLast(2).forEach { screen ->
-                    NavigationBarItem(
-                        icon = { screen.icon(hasUnreadMessages, hasUnreadNotifications) },
+                        icon = { screen.icon(totalUnreadMessages, hasUnreadNotifications) },
                         selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                         onClick = {
                             navController.navigate(screen.route) {

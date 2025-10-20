@@ -99,7 +99,7 @@ fun ConversationsScreen(
                 ConversationItem(
                     conversation = conversation,
                     currentUserId = currentUserId ?: "",
-                    unreadCount = unreadCount,
+                    unreadCount = unreadCount.toInt(),
                     onClick = { onConversationClick(it) }
                 )
                 Divider()
@@ -129,7 +129,7 @@ fun ConversationItem(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(contentAlignment = Alignment.BottomEnd) {
+        Box(contentAlignment = Alignment.Center) {
             if (otherParticipantPhoto.isNotBlank()) {
                 AsyncImage(
                     model = otherParticipantPhoto,
@@ -154,7 +154,7 @@ fun ConversationItem(
                 }
             }
             if (isUnread) {
-                 Badge {
+                Badge(modifier = Modifier.align(Alignment.BottomEnd)) {
                      Text(unreadCount.toString())
                  }
             }
