@@ -5,7 +5,7 @@ import com.google.firebase.firestore.ServerTimestamp
 import java.util.Date
 
 enum class NotificationType {
-    LIKE, COMMENT, FOLLOW_REQUEST
+    LIKE, COMMENT, FOLLOW_REQUEST, COMMENT_LIKE
 }
 
 data class Notification(
@@ -15,6 +15,7 @@ data class Notification(
     val actorName: String = "",
     val actorPhotoUrl: String? = null,
     val postId: String = "",
+    val commentId: String? = null,
     val postPreviewUrl: String? = null,
     val type: NotificationType? = null,
     val read: Boolean = false,

@@ -215,6 +215,7 @@ class HomeViewModel : ViewModel() {
 
         firestore.runTransaction { transaction ->
             val post = transaction.get(postRef).toObject(Post::class.java)!!
+            val commentToUpdate = post.comments.find { it.id == commentId }
             val comments = post.comments.map { comment ->
                 if (comment.id == commentId) {
                     val likedBy = comment.likedBy.toMutableList()
@@ -222,6 +223,17 @@ class HomeViewModel : ViewModel() {
                         likedBy.remove(currentUser.uid)
                     } else {
                         likedBy.add(currentUser.uid)
+                        if (comment.authorId != currentUser.uid) {
+                            val notification = com.barry.circleme.data.Notification(
+                                userId = comment.authorId,
+                                actorId = currentUser.uid,
+                                actorName = currentUser.displayName ?: "",
+                                postId = postId,
+                                commentId = commentId,
+                                type = com.barry.circleme.data.NotificationType.COMMENT_LIKE
+                            )
+                            firestore.collection("notifications").add(notification)
+                        }
                     }
                     comment.copy(likedBy = likedBy)
                 } else {

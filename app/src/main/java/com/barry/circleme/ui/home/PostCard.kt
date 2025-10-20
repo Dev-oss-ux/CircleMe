@@ -75,7 +75,7 @@ fun PostCard(
     var showEditDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var updatedText by remember { mutableStateOf(post.text) }
-    var comments by remember { mutableStateOf<List<Comment>>(emptyList()) }
+    val comments = post.comments
     val likerNames by homeViewModel.likerNames.collectAsState()
     var showLikers by remember { mutableStateOf(false) }
     var showComments by remember { mutableStateOf(false) }
@@ -89,14 +89,6 @@ fun PostCard(
                     currentUser = snapshot?.toObject(User::class.java)
                 }
         }
-    }
-
-    LaunchedEffect(post.id) {
-        Firebase.firestore.collection("posts").document(post.id)
-            .collection("comments")
-            .addSnapshotListener { snapshots, _ ->
-                comments = snapshots?.toObjects(Comment::class.java) ?: emptyList()
-            }
     }
 
     if (showEditDialog) {
