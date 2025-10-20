@@ -30,6 +30,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -197,6 +198,13 @@ fun PostCard(
 
         // --- Likes and Caption ---
         Column(modifier = Modifier.padding(horizontal = 12.dp)) {
+            if (post.likedBy.isNotEmpty()) {
+                Text(
+                    text = "${post.likedBy.size} likes",
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
             if (post.text.isNotBlank()) {
                  Text(
                     buildAnnotatedString {
@@ -223,19 +231,24 @@ fun PostCard(
             }
             
             if (showComments) {
-                Column(modifier = Modifier.padding(top = 8.dp)) {
-                    comments.forEach { comment ->
-                        Text(
-                            buildAnnotatedString {
-                                withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                    append(comment.authorName)
-                                }
-                                append(" ")
-                                append(comment.text)
-                            },
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
+                comments.forEach { comment ->
+                    CommentItem(comment = comment, homeViewModel = homeViewModel, postId = post.id)
+                }
+            }
+
+            // --- Add Comment Section ---
+            Row(modifier = Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                TextField(
+                    value = commentText,
+                    onValueChange = { commentText = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Add a comment...") }
+                )
+                IconButton(onClick = { 
+                    homeViewModel.addComment(post.id, post.authorId, commentText)
+                    commentText = "" 
+                }) {
+                    Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = "Send comment")
                 }
             }
         }
@@ -246,6 +259,73 @@ fun PostCard(
             homeViewModel.fetchLikers(post.id)
         }
         LikesDialog(likerNames = likerNames, onDismiss = { showLikers = false })
+    }
+}
+
+@Composable
+fun CommentItem(
+    comment: Comment,
+    homeViewModel: HomeViewModel,
+    postId: String,
+    modifier: Modifier = Modifier
+) {
+    val currentUserId = Firebase.auth.currentUser?.uid
+    val isLiked = currentUserId?.let { comment.likedBy.contains(it) } ?: false
+    var showReplyTextField by remember { mutableStateOf(false) }
+    var replyText by remember { mutableStateOf("") }
+
+    Column(modifier = modifier.padding(start = 16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                buildAnnotatedString {
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append(comment.authorName)
+                    }
+                    append(" ")
+                    append(comment.text)
+                },
+                style = MaterialTheme.typography.bodySmall
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            IconButton(onClick = { homeViewModel.likeComment(postId, comment.id) }) {
+                Icon(
+                    imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = "Like comment",
+                    tint = if (isLiked) Color.Red else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (comment.likedBy.isNotEmpty()) {
+                Text("${comment.likedBy.size} likes", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            }
+            Spacer(modifier = Modifier.padding(start = 8.dp))
+            Text("Reply", style = MaterialTheme.typography.bodySmall, color = Color.Gray, modifier = Modifier.clickable { showReplyTextField = !showReplyTextField })
+        }
+
+        if (showReplyTextField) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextField(
+                    value = replyText,
+                    onValueChange = { replyText = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Add a reply...") }
+                )
+                IconButton(onClick = { 
+                    homeViewModel.replyToComment(postId, comment.id, replyText)
+                    replyText = ""
+                    showReplyTextField = false
+                }) {
+                    Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = "Send reply")
+                }
+            }
+        }
+
+        comment.replies.forEach { reply ->
+            CommentItem(comment = reply, homeViewModel = homeViewModel, postId = postId, modifier = Modifier.padding(start = 16.dp))
+        }
     }
 }
 

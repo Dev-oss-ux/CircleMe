@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.util.Date
+import java.util.UUID
 
 class HomeViewModel : ViewModel() {
 
@@ -132,15 +134,18 @@ class HomeViewModel : ViewModel() {
     }
 
     fun addComment(postId: String, postAuthorId: String, commentText: String) {
+        if (commentText.isBlank()) return
         if (postId.isBlank()) {
             Log.e("HomeViewModel", "Cannot comment on post with blank ID.")
             return
         }
         val currentUser = auth.currentUser ?: return
         val comment = Comment(
+            id = UUID.randomUUID().toString(),
             authorId = currentUser.uid,
             authorName = currentUser.displayName ?: "",
-            text = commentText
+            text = commentText,
+            timestamp = Date()
         )
 
         firestore.collection("posts").document(postId)
@@ -161,5 +166,61 @@ class HomeViewModel : ViewModel() {
             .addOnFailureListener { e ->
                 Log.e("HomeViewModel", "Failed to add comment", e)
             }
+    }
+
+    fun likeComment(postId: String, commentId: String) {
+        val currentUser = auth.currentUser ?: return
+        val postRef = firestore.collection("posts").document(postId)
+
+        firestore.runTransaction { transaction ->
+            val post = transaction.get(postRef).toObject(Post::class.java)!!
+            val comments = post.comments.map { comment ->
+                if (comment.id == commentId) {
+                    val likedBy = comment.likedBy.toMutableList()
+                    if (likedBy.contains(currentUser.uid)) {
+                        likedBy.remove(currentUser.uid)
+                    } else {
+                        likedBy.add(currentUser.uid)
+                    }
+                    comment.copy(likedBy = likedBy)
+                } else {
+                    comment
+                }
+            }
+            transaction.update(postRef, "comments", comments)
+            null
+        }.addOnFailureListener { e ->
+            Log.e("HomeViewModel", "Like comment transaction failed", e)
+        }
+    }
+
+    fun replyToComment(postId: String, commentId: String, replyText: String) {
+        if (replyText.isBlank()) return
+        val currentUser = auth.currentUser ?: return
+        val postRef = firestore.collection("posts").document(postId)
+
+        val reply = Comment(
+            id = UUID.randomUUID().toString(),
+            authorId = currentUser.uid,
+            authorName = currentUser.displayName ?: "",
+            text = replyText,
+            timestamp = Date()
+        )
+
+        firestore.runTransaction { transaction ->
+            val post = transaction.get(postRef).toObject(Post::class.java)!!
+            val comments = post.comments.map { comment ->
+                if (comment.id == commentId) {
+                    val replies = comment.replies.toMutableList().apply { add(reply) }
+                    comment.copy(replies = replies)
+                } else {
+                    comment
+                }
+            }
+            transaction.update(postRef, "comments", comments)
+            null
+        }.addOnFailureListener { e ->
+            Log.e("HomeViewModel", "Reply to comment transaction failed", e)
+        }
     }
 }

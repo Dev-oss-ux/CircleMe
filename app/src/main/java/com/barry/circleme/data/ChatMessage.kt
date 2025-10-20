@@ -1,6 +1,5 @@
 package com.barry.circleme.data
 
-import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.ServerTimestamp
 import java.util.Date
 
@@ -14,7 +13,7 @@ data class Reaction(
 )
 
 data class ChatMessage(
-    @DocumentId val id: String = "",
+    val id: String = "",
     val senderId: String = "",
     val receiverId: String = "",
     val type: MessageType = MessageType.TEXT,
