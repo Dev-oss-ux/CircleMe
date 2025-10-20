@@ -1,9 +1,11 @@
 package com.barry.circleme.ui.home
 
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.barry.circleme.data.Comment
+import com.barry.circleme.data.Story
 import com.barry.circleme.data.User
 import com.barry.circleme.ui.create_post.Post
 import com.google.firebase.auth.ktx.auth
@@ -11,6 +13,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -26,10 +29,14 @@ class HomeViewModel : ViewModel() {
 
     private val firestore = Firebase.firestore
     private val auth = Firebase.auth
+    private val storage = Firebase.storage
 
     private val _allPosts = MutableStateFlow<List<Post>>(emptyList())
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
+
+    private val _stories = MutableStateFlow<List<Story>>(emptyList())
+    val stories = _stories.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
@@ -51,6 +58,7 @@ class HomeViewModel : ViewModel() {
 
     init {
         fetchAllPosts()
+        fetchStories()
     }
 
     private fun fetchAllPosts() {
@@ -69,6 +77,39 @@ class HomeViewModel : ViewModel() {
                 }
                 _isLoading.value = false
             }
+    }
+
+    private fun fetchStories() {
+        firestore.collection("stories")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshots, e ->
+                if (e != null) {
+                    Log.w("HomeViewModel", "Listen failed.", e)
+                    return@addSnapshotListener
+                }
+
+                if (snapshots != null) {
+                    _stories.value = snapshots.toObjects(Story::class.java)
+                }
+            }
+    }
+
+    fun createStory(imageUri: Uri) {
+        viewModelScope.launch {
+            val currentUser = auth.currentUser ?: return@launch
+            val storageRef = storage.reference.child("stories/${currentUser.uid}/${System.currentTimeMillis()}")
+            val uploadTask = storageRef.putFile(imageUri).await()
+            val downloadUrl = uploadTask.storage.downloadUrl.await().toString()
+
+            val story = Story(
+                userId = currentUser.uid,
+                username = currentUser.displayName ?: "",
+                userProfilePictureUrl = currentUser.photoUrl?.toString(),
+                imageUrl = downloadUrl
+            )
+
+            firestore.collection("stories").add(story).await()
+        }
     }
 
     fun onSearchQueryChange(query: String) {
