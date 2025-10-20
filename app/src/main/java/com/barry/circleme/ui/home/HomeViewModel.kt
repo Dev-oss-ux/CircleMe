@@ -4,8 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.barry.circleme.data.Comment
-import com.barry.circleme.data.Notification
-import com.barry.circleme.data.NotificationType
 import com.barry.circleme.data.User
 import com.barry.circleme.ui.create_post.Post
 import com.google.firebase.auth.ktx.auth
@@ -15,9 +13,12 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class HomeViewModel : ViewModel() {
 
@@ -25,21 +26,23 @@ class HomeViewModel : ViewModel() {
     private val auth = Firebase.auth
 
     private val _allPosts = MutableStateFlow<List<Post>>(emptyList())
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading = _isLoading.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
-    val posts = _searchQuery.combine(_allPosts) { query, posts ->
+    val posts: StateFlow<List<Post>> = combine(_allPosts, _searchQuery) { allPosts, query ->
         if (query.isBlank()) {
-            posts
+            allPosts
         } else {
-            posts.filter {
-                it.text.contains(query, ignoreCase = true) ||
-                it.authorName.contains(query, ignoreCase = true)
-            }
+            allPosts.filter { it.text.contains(query, ignoreCase = true) }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
     private val _likerNames = MutableStateFlow<List<String>>(emptyList())
     val likerNames = _likerNames.asStateFlow()
@@ -49,89 +52,82 @@ class HomeViewModel : ViewModel() {
     }
 
     private fun fetchAllPosts() {
+        _isLoading.value = true
         firestore.collection("posts")
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshots, e ->
                 if (e != null) {
                     Log.w("HomeViewModel", "Listen failed.", e)
+                    _isLoading.value = false
                     return@addSnapshotListener
                 }
 
                 if (snapshots != null) {
                     _allPosts.value = snapshots.toObjects(Post::class.java)
                 }
+                _isLoading.value = false
             }
     }
 
-    fun onSearchQueryChange(newQuery: String) {
-        _searchQuery.value = newQuery
+    fun onSearchQueryChange(query: String) {
+        _searchQuery.value = query
     }
 
-    fun deletePost(postId: String) {
-        if (postId.isBlank()) {
-            Log.e("HomeViewModel", "Cannot delete post with blank ID.")
-            return
-        }
-        firestore.collection("posts").document(postId).delete()
-    }
-
-    fun editPost(postId: String, newText: String) {
-        if (postId.isBlank()) {
-            Log.e("HomeViewModel", "Cannot edit post with blank ID.")
-            return
-        }
-        firestore.collection("posts").document(postId).update("text", newText)
-    }
-
-    fun getLikerNames(likedBy: List<String>) {
-        if (likedBy.isEmpty()) {
-            _likerNames.value = emptyList()
-            return
-        }
-        firestore.collection("users")
-            .whereIn("uid", likedBy)
-            .get()
-            .addOnSuccessListener { documents ->
-                val users = documents.toObjects(User::class.java)
-                _likerNames.value = users.map { it.displayName ?: "Unknown" }
-            }
-    }
-
-    fun clearLikerNames() {
-        _likerNames.value = emptyList()
-    }
-
-    fun toggleLike(postId: String, postAuthorId: String) {
-        if (postId.isBlank()) {
-            Log.e("HomeViewModel", "Cannot like post with blank ID.")
-            return
-        }
+    fun onLikeClick(postId: String) {
         val currentUser = auth.currentUser ?: return
         val postRef = firestore.collection("posts").document(postId)
 
         firestore.runTransaction { transaction ->
             val snapshot = transaction.get(postRef)
-            val post = snapshot.toObject(Post::class.java)
-            val likedBy = post?.likedBy ?: emptyList()
+            val post = snapshot.toObject(Post::class.java)!!
+            val likedBy = post.likedBy.toMutableList()
 
             if (likedBy.contains(currentUser.uid)) {
-                transaction.update(postRef, "likedBy", FieldValue.arrayRemove(currentUser.uid))
+                likedBy.remove(currentUser.uid)
             } else {
-                transaction.update(postRef, "likedBy", FieldValue.arrayUnion(currentUser.uid))
-                if (currentUser.uid != postAuthorId) { // Don't notify for your own likes
-                    val notification = Notification(
-                        userId = postAuthorId,
-                        actorId = currentUser.uid,
-                        actorName = currentUser.displayName ?: "",
-                        postId = postId,
-                        type = NotificationType.LIKE
-                    )
-                    firestore.collection("notifications").add(notification)
-                }
+                likedBy.add(currentUser.uid)
             }
-            null // Transaction must return a value
+
+            transaction.update(postRef, "likedBy", likedBy)
+            null
         }.addOnFailureListener { e ->
             Log.e("HomeViewModel", "Like transaction failed", e)
+        }
+    }
+
+    fun fetchLikers(postId: String) {
+        viewModelScope.launch {
+            try {
+                val post = firestore.collection("posts").document(postId).get().await().toObject(Post::class.java)
+                val userIds = post?.likedBy ?: return@launch
+                if (userIds.isNotEmpty()) {
+                    val users = firestore.collection("users").whereIn("uid", userIds).get().await()
+                        .toObjects(User::class.java)
+                    _likerNames.value = users.map { it.displayName ?: it.username }
+                } else {
+                    _likerNames.value = emptyList()
+                }
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "Error fetching likers", e)
+            }
+        }
+    }
+
+    fun toggleBookmark(postId: String) {
+        val currentUser = auth.currentUser ?: return
+        val userRef = firestore.collection("users").document(currentUser.uid)
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(userRef)
+            val user = snapshot.toObject(User::class.java)
+            val bookmarkedPosts = user?.bookmarkedPosts ?: emptyList()
+            if (bookmarkedPosts.contains(postId)) {
+                transaction.update(userRef, "bookmarkedPosts", FieldValue.arrayRemove(postId))
+            } else {
+                transaction.update(userRef, "bookmarkedPosts", FieldValue.arrayUnion(postId))
+            }
+            null
+        }.addOnFailureListener { e ->
+            Log.e("HomeViewModel", "Bookmark transaction failed", e)
         }
     }
 
@@ -141,28 +137,29 @@ class HomeViewModel : ViewModel() {
             return
         }
         val currentUser = auth.currentUser ?: return
-        if (commentText.isBlank()) return
-
         val comment = Comment(
             authorId = currentUser.uid,
-            authorName = currentUser.displayName ?: "Anonymous",
-            authorPhotoUrl = currentUser.photoUrl?.toString(),
+            authorName = currentUser.displayName ?: "",
             text = commentText
         )
 
         firestore.collection("posts").document(postId)
-            .collection("comments")
-            .add(comment)
-
-        if (currentUser.uid != postAuthorId) {
-            val notification = Notification(
-                userId = postAuthorId,
-                actorId = currentUser.uid,
-                actorName = currentUser.displayName ?: "",
-                postId = postId,
-                type = NotificationType.COMMENT
-            )
-            firestore.collection("notifications").add(notification)
-        }
+            .update("comments", FieldValue.arrayUnion(comment))
+            .addOnSuccessListener {
+                // Create a notification for the post author
+                val notification = com.barry.circleme.data.Notification(
+                    userId = postAuthorId, // The ID of the user who receives the notification
+                    actorId = currentUser.uid, // The ID of the user who performed the action
+                    actorName = currentUser.displayName ?: "",
+                    postId = postId,
+                    type = com.barry.circleme.data.NotificationType.COMMENT
+                )
+                if (postAuthorId != currentUser.uid) { // Avoid notifying yourself
+                    firestore.collection("notifications").add(notification)
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("HomeViewModel", "Failed to add comment", e)
+            }
     }
 }

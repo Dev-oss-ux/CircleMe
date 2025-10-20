@@ -1,8 +1,8 @@
 package com.barry.circleme.ui.home
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,14 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -27,15 +22,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.barry.circleme.R
+import com.barry.circleme.ui.create_post.Post
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,71 +37,70 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     homeViewModel: HomeViewModel = viewModel(),
     onSignOut: () -> Unit,
-    onCreatePost: () -> Unit
+    onUserClick: (String) -> Unit,
+    onSearchClick: () -> Unit
 ) {
     val posts by homeViewModel.posts.collectAsState()
     val searchQuery by homeViewModel.searchQuery.collectAsState()
+    val isLoading by homeViewModel.isLoading.collectAsState()
     val focusManager = LocalFocusManager.current
 
     Scaffold(
-        modifier = modifier.fillMaxSize()
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { 
-                    focusManager.clearFocus() 
-                }
-        ) {
+        modifier = modifier.fillMaxSize(),
+    ) { paddingValues ->
+        Column(modifier = Modifier.padding(paddingValues)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .clickable { onSearchClick() },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Card(
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(32.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F2F5))
-                ) {
+                Box(modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { homeViewModel.onSearchQueryChange(it) },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Search posts...") },
+                        placeholder = { Text("Search users...") },
                         leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = Color.Transparent,
                             unfocusedBorderColor = Color.Transparent,
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent
-                        )
+                        ),
+                        readOnly = true,
+                        enabled = false
                     )
                 }
-                FloatingActionButton(
-                    onClick = onCreatePost,
+            }
+
+            if (isLoading) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.create_post_content_description))
+                    items(5) { 
+                        PostCardSkeleton()
+                    }
                 }
-            }
-
-            if (posts.isEmpty()) {
-                // TODO: Show a nice empty state message
-                Text("No posts found. Try a different search or be the first to share!")
-            }
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(posts, key = { it.id }) { post ->
-                    PostCard(
-                        post = post, 
-                        homeViewModel = homeViewModel
-                    )
+            } else if (posts.isEmpty()) {
+                Text("No posts found. Be the first to share!")
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(posts, key = { it.id }) { post ->
+                        PostCard(
+                            post = post, 
+                            homeViewModel = homeViewModel,
+                            onUserClick = onUserClick
+                        )
+                    }
                 }
             }
         }

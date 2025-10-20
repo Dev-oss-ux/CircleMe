@@ -1,15 +1,13 @@
-package com.barry.circleme.ui.find_user
+package com.barry.circleme.ui.profile
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -18,30 +16,34 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.barry.circleme.data.User
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FindUserScreen(
-    modifier: Modifier = Modifier,
-    findUserViewModel: FindUserViewModel = viewModel(),
-    onUserClick: (User) -> Unit,
+fun EditProfileScreen(
+    editProfileViewModel: EditProfileViewModel = viewModel(),
     onNavigateBack: () -> Unit
 ) {
-    val users by findUserViewModel.users.collectAsState()
-    val searchQuery by findUserViewModel.searchQuery.collectAsState()
+    val displayName by editProfileViewModel.displayName.collectAsState()
+    val bio by editProfileViewModel.bio.collectAsState()
+    val profileSaved by editProfileViewModel.profileSaveState.collectAsState()
+
+    LaunchedEffect(profileSaved) {
+        if (profileSaved) {
+            onNavigateBack()
+            editProfileViewModel.onProfileSaveStateHandled()
+        }
+    }
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("Find Users") },
+                title = { Text("Edit Profile") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -54,34 +56,28 @@ fun FindUserScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { findUserViewModel.onSearchQueryChange(it) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                label = { Text("Search by username") }
+                value = displayName,
+                onValueChange = { editProfileViewModel.onDisplayNameChange(it) },
+                label = { Text("Display Name") },
+                modifier = Modifier.fillMaxWidth()
             )
-            LazyColumn {
-                items(users) { user ->
-                    UserItem(user = user, onClick = { onUserClick(user) })
-                }
+            OutlinedTextField(
+                value = bio,
+                onValueChange = { editProfileViewModel.onBioChange(it) },
+                label = { Text("Bio") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3
+            )
+            Button(
+                onClick = { editProfileViewModel.saveProfile() },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Save")
             }
         }
-    }
-}
-
-@Composable
-fun UserItem(user: User, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // TODO: Add user profile picture
-        Text(text = user.username)
     }
 }
