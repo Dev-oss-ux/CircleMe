@@ -50,12 +50,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onNavigateBack: () -> Unit) {
+fun SettingsScreen(onNavigateBack: () -> Unit, onSignOut: () -> Unit) {
     var searchQuery by remember { mutableStateOf("") }
 
     Scaffold(
@@ -121,7 +122,7 @@ fun SettingsScreen(onNavigateBack: () -> Unit) {
 
             item {
                 Button(
-                    onClick = { /* TODO: Logout */ },
+                    onClick = onSignOut,
                     modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.1f))
                 ) {
@@ -133,7 +134,7 @@ fun SettingsScreen(onNavigateBack: () -> Unit) {
                 Text(
                     text = "CircleMe version 1.0.0",
                     modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    textAlign = TextAlign.Center,
                     color = Color.Gray,
                     fontSize = 12.sp
                 )

@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -51,8 +50,7 @@ fun NotificationsScreen(
     notificationsViewModel: NotificationsViewModel = viewModel(),
     onNotificationClick: (String) -> Unit,
     onUserClick: (String) -> Unit,
-    onSettingsClick: () -> Unit,
-    onMessagesClick: () -> Unit
+    onSettingsClick: () -> Unit
 ) {
     val notifications by notificationsViewModel.notifications.collectAsState()
 
@@ -69,9 +67,6 @@ fun NotificationsScreen(
                 actions = {
                     TextButton(onClick = { notificationsViewModel.clearAllNotifications() }) {
                         Text("Clear All")
-                    }
-                    IconButton(onClick = onMessagesClick) {
-                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Messages")
                     }
                 }
             )

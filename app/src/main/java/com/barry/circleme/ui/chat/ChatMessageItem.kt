@@ -39,7 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.barry.circleme.data.ChatMessage
 import com.barry.circleme.data.MessageType
-import com.barry.circleme.ui.theme.WhatsAppGreen
+import com.barry.circleme.ui.theme.PrimaryBlue
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -52,7 +52,8 @@ fun ChatMessageItem(
     isSentByCurrentUser: Boolean,
     chatViewModel: ChatViewModel
 ) {
-    val bubbleColor = if (isSentByCurrentUser) WhatsAppGreen else Color.White
+    val bubbleColor = if (isSentByCurrentUser) PrimaryBlue else Color.White
+    val textColor = if (isSentByCurrentUser) Color.White else Color.Black
     val horizontalArrangement = if (isSentByCurrentUser) Arrangement.End else Arrangement.Start
     var showReactions by remember { mutableStateOf(false) }
 
@@ -80,7 +81,7 @@ fun ChatMessageItem(
             ) {
                 Box(modifier = Modifier.padding(8.dp)) {
                      when (message.type) {
-                        MessageType.TEXT -> TextMessageContent(message)
+                        MessageType.TEXT -> TextMessageContent(message, textColor)
                         MessageType.VOICE -> VoiceMessageContent(message)
                     }
                 }
@@ -101,16 +102,17 @@ fun ChatMessageItem(
 }
 
 @Composable
-fun TextMessageContent(message: ChatMessage) {
+fun TextMessageContent(message: ChatMessage, color: Color) {
     Row(verticalAlignment = Alignment.Bottom) {
         Text(
             text = message.text ?: "",
-            modifier = Modifier.padding(end = 32.dp)
+            modifier = Modifier.padding(end = 32.dp),
+            color = color
         )
         Text(
             text = message.timestamp?.let { SimpleDateFormat("HH:mm", Locale.getDefault()).format(it) } ?: "",
             fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            color = color.copy(alpha = 0.6f),
             modifier = Modifier.align(Alignment.Bottom)
         )
     }

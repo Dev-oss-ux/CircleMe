@@ -2,23 +2,20 @@ package com.barry.circleme.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Main Theme Colors (Warm & Soft)
-val LightPrimary = Color(0xFF8C5E58) // A warm, soft brown
-val LightSecondary = Color(0xFFB39DDB) // A gentle lavender
-val LightTertiary = Color(0xFFF48FB1) // A soft pink
-val LightBackground = Color(0xFFFFF7F6) // A very light, warm off-white
-val LightSurface = Color(0xFFFFFFFF)
+val PrimaryBlue = Color(0xFF007AFF)
+val BackgroundLight = Color(0xFFF8F8F8)
+val TextBlack = Color(0xFF000000)
+val TextGray = Color(0xFF8A8A8E)
 
-val DarkPrimary = Color(0xFFD7CCC8) // A light, warm gray
-val DarkSecondary = Color(0xFF7E57C2) // A deeper lavender
-val DarkTertiary = Color(0xFFEC407A) // A more vibrant pink
-val DarkBackground = Color(0xFF1C1B1F)
-val DarkSurface = Color(0xFF2C2B2F)
+// Old colors - can be removed or replaced
+val Purple80 = Color(0xFFD0BCFF)
+val PurpleGrey80 = Color(0xFFCCC2DC)
+val Pink80 = Color(0xFFEFB8C8)
 
-// Gradient Colors for Auth Screen
-val AuthGradientStart = Color(0xFFC973FF) // Bright Pink/Purple
-val AuthGradientEnd = Color(0xFF7A3ADB)   // Deep Purple
+val Purple40 = Color(0xFF6650a4)
+val PurpleGrey40 = Color(0xFF625b71)
+val Pink40 = Color(0xFF7D5260)
 
-// WhatsApp-style Colors
-val WhatsAppGreen = Color(0xFFE7FFDB) // Light green for sent messages
-val WhatsAppBackground = Color(0xFFE5DDD5) // Textured background color
+val AuthGradientStart = Color(0xFF6A82FB)
+val AuthGradientEnd = Color(0xFFFC5C7D)
+val WhatsAppBackground = Color(0xFFE5DDD5)

@@ -130,8 +130,7 @@ fun MainScreen(appNavController: NavController) {
                     NotificationsScreen(
                         onNotificationClick = { postId -> navController.navigate("${Routes.POST_SCREEN}/$postId") },
                         onUserClick = { userId -> navController.navigate("${Routes.PROFILE_SCREEN}/$userId") },
-                        onSettingsClick = { navController.navigate(Routes.SETTINGS_SCREEN) },
-                        onMessagesClick = { appNavController.navigate(Routes.MESSAGES_SCREEN) }
+                        onSettingsClick = { navController.navigate(Routes.SETTINGS_SCREEN) }
                     )
                 }
                 composable(Routes.PROFILE_SCREEN) {
@@ -184,7 +183,12 @@ fun MainScreen(appNavController: NavController) {
                 }
                 composable(Routes.SETTINGS_SCREEN) {
                     SettingsScreen(
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = { navController.popBackStack() },
+                        onSignOut = {
+                            appNavController.navigate(Routes.AUTH_SCREEN) {
+                                popUpTo(Routes.MAIN_SCREEN) { inclusive = true }
+                            }
+                        }
                     )
                 }
             }
