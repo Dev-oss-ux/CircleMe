@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.barry.circleme.data.Comment
+import com.barry.circleme.data.NotificationType
 import com.barry.circleme.data.Story
 import com.barry.circleme.data.User
 import com.barry.circleme.ui.create_post.Post
@@ -139,7 +140,7 @@ class HomeViewModel : ViewModel() {
         _searchQuery.value = query
     }
 
-    fun onLikeClick(postId: String) {
+    fun onLikeClick(postId: String, postAuthorId: String) {
         val currentUser = auth.currentUser ?: return
         val postRef = firestore.collection("posts").document(postId)
 
@@ -152,6 +153,16 @@ class HomeViewModel : ViewModel() {
                 likedBy.remove(currentUser.uid)
             } else {
                 likedBy.add(currentUser.uid)
+                 if (postAuthorId != currentUser.uid) {
+                    val notification = com.barry.circleme.data.Notification(
+                        userId = postAuthorId,
+                        actorId = currentUser.uid,
+                        actorName = currentUser.displayName ?: "",
+                        postId = postId,
+                        type = NotificationType.LIKE
+                    )
+                    firestore.collection("notifications").add(notification)
+                }
             }
 
             transaction.update(postRef, "likedBy", likedBy)

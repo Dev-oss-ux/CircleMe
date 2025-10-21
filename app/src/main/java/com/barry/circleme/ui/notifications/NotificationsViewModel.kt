@@ -1,5 +1,6 @@
 package com.barry.circleme.ui.notifications
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.barry.circleme.data.Notification
@@ -30,23 +31,28 @@ class NotificationsViewModel : ViewModel() {
     private fun fetchNotifications() {
         val userId = auth.currentUser?.uid ?: return
 
-        viewModelScope.launch {
-            firestore.collection("notifications")
-                .whereEqualTo("userId", userId)
-                .orderBy("timestamp", Query.Direction.DESCENDING)
-                .addSnapshotListener { snapshots, _ ->
-                    val notificationList = snapshots?.toObjects(Notification::class.java) ?: emptyList()
+        firestore.collection("notifications")
+            .whereEqualTo("userId", userId)
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshots, e ->
+                if (e != null) {
+                    Log.w("NotificationsViewModel", "Listen failed.", e)
+                    return@addSnapshotListener
+                }
+
+                if (snapshots != null) {
+                    val notificationList = snapshots.toObjects(Notification::class.java)
                     _notifications.value = notificationList
                     _hasUnreadNotifications.value = notificationList.any { !it.read }
 
                     // Mark notifications as read
-                    snapshots?.documents?.forEach { document ->
+                    snapshots.documents.forEach { document ->
                         if (document.getBoolean("read") == false) {
                             document.reference.update("read", true)
                         }
                     }
                 }
-        }
+            }
     }
 
     fun clearAllNotifications() {

@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
@@ -30,7 +32,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -216,7 +217,7 @@ fun PostCard(
             PostActionButton(
                 icon = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                 contentDescription = "Like",
-                onClick = { homeViewModel.onLikeClick(post.id) },
+                onClick = { homeViewModel.onLikeClick(post.id, post.authorId) },
                 tint = if (isLiked) Color.Red else MaterialTheme.colorScheme.onSurface
             )
             PostActionButton(
@@ -256,8 +257,7 @@ fun PostCard(
             }
             if (post.text.isNotBlank()) {
                  Text(
-                    buildAnnotatedString {
-                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                    buildAnnotatedString {                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
                             append(post.authorName)
                         }
                         append(" ")
@@ -379,14 +379,14 @@ fun LikesDialog(likerNames: List<String>, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         title = { Text("Liked by") },
         text = {
-            Column {
-                likerNames.forEach { name ->
-                    Text(name)
+            LazyColumn {
+                items(likerNames) { name ->
+                    Text(name, modifier = Modifier.padding(vertical = 4.dp))
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
+            Button(onClick = onDismiss) {
                 Text("Close")
             }
         }
