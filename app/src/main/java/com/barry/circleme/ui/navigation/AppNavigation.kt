@@ -17,6 +17,7 @@ import com.barry.circleme.ui.chat.ChatScreen
 import com.barry.circleme.ui.comments.CommentsScreen
 import com.barry.circleme.ui.conversations.ConversationsScreen
 import com.barry.circleme.ui.create_post.CreatePostScreen
+import com.barry.circleme.ui.new_conversation.NewConversationScreen
 import com.barry.circleme.ui.video_call.VideoCallScreen
 import com.barry.circleme.ui.voice_call.VoiceCallScreen
 import com.google.firebase.auth.ktx.auth
@@ -67,7 +68,8 @@ fun AppNavigation() {
                 onConversationClick = { recipientId ->
                     navController.navigate("${Routes.CHAT_SCREEN}/$recipientId")
                 },
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNewConversation = { navController.navigate(Routes.NEW_CONVERSATION_SCREEN) }
             )
         }
         composable("${Routes.COMMENTS_SCREEN}/{postId}") {
@@ -86,6 +88,13 @@ fun AppNavigation() {
             arguments = listOf(navArgument("recipientId") { type = NavType.StringType })
         ) {
             VideoCallScreen(onNavigateBack = { navController.popBackStack() })
+        }
+        composable(Routes.NEW_CONVERSATION_SCREEN) {
+            NewConversationScreen(onUserClick = { recipientId ->
+                navController.navigate("${Routes.CHAT_SCREEN}/$recipientId") {
+                    popUpTo(Routes.MESSAGES_SCREEN)
+                }
+            })
         }
     }
 }

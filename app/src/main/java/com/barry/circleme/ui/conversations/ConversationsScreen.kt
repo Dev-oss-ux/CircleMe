@@ -56,7 +56,8 @@ fun ConversationsScreen(
     modifier: Modifier = Modifier,
     conversationsViewModel: ConversationsViewModel = viewModel(),
     onConversationClick: (recipientId: String) -> Unit,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNewConversation: () -> Unit
 ) {
     val conversations by conversationsViewModel.conversations.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
@@ -73,7 +74,7 @@ fun ConversationsScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* TODO: New Conversation */ }) {
+                    IconButton(onClick = onNewConversation) {
                         Icon(Icons.Default.Add, contentDescription = "New Conversation")
                     }
                 }
