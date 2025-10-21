@@ -13,6 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import com.barry.circleme.ui.auth.AuthScreen
 import com.barry.circleme.ui.chat.ChatScreen
 import com.barry.circleme.ui.comments.CommentsScreen
+import com.barry.circleme.ui.conversations.ConversationsScreen
 import com.barry.circleme.ui.create_post.CreatePostScreen
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -49,6 +50,14 @@ fun AppNavigation() {
         }
         composable("${Routes.CHAT_SCREEN}/{recipientId}") {
             ChatScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(Routes.MESSAGES_SCREEN) {
+            ConversationsScreen(
+                onConversationClick = { recipientId ->
+                    navController.navigate("${Routes.CHAT_SCREEN}/$recipientId")
+                },
                 onNavigateBack = { navController.popBackStack() }
             )
         }
