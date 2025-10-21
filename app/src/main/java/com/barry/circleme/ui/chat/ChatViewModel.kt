@@ -122,7 +122,7 @@ class ChatViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
         }
     }
 
-    private fun sendMessage(message: ChatMessage, lastMessageUpdate: Pair<String, Any>) {
+    fun sendMessage(message: ChatMessage, lastMessageUpdate: Pair<String, Any>) {
         conversationRef?.collection("messages")?.add(message)
 
         val conversationUpdate = mapOf(

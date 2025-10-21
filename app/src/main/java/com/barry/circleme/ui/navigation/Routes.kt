@@ -13,6 +13,7 @@ object Routes {
     const val VOICE_CALL_SCREEN = "voice_call_screen"
     const val VIDEO_CALL_SCREEN = "video_call_screen"
     const val NEW_CONVERSATION_SCREEN = "new_conversation_screen"
+    const val AI_CHAT_SCREEN = "ai_chat_screen"
 
     // From old Routes.kt (now standardized)
     const val PROFILE_SCREEN = "profile_screen"
