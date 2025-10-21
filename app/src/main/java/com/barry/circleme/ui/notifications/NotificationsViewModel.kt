@@ -21,8 +21,8 @@ class NotificationsViewModel : ViewModel() {
     private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
     val notifications = _notifications.asStateFlow()
 
-    private val _hasUnreadNotifications = MutableStateFlow(false)
-    val hasUnreadNotifications = _hasUnreadNotifications.asStateFlow()
+    private val _unreadNotificationCount = MutableStateFlow(0)
+    val unreadNotificationCount = _unreadNotificationCount.asStateFlow()
 
     init {
         fetchNotifications()
@@ -43,13 +43,21 @@ class NotificationsViewModel : ViewModel() {
                 if (snapshots != null) {
                     val notificationList = snapshots.toObjects(Notification::class.java)
                     _notifications.value = notificationList
-                    _hasUnreadNotifications.value = notificationList.any { !it.read }
+                    _unreadNotificationCount.value = notificationList.count { !it.read }
+                }
+            }
+    }
 
-                    // Mark notifications as read
-                    snapshots.documents.forEach { document ->
-                        if (document.getBoolean("read") == false) {
-                            document.reference.update("read", true)
-                        }
+    fun markNotificationsAsRead() {
+        val userId = auth.currentUser?.uid ?: return
+        firestore.collection("notifications")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("read", false)
+            .get()
+            .addOnSuccessListener { snapshots ->
+                firestore.runBatch { batch ->
+                    snapshots.documents.forEach { 
+                        batch.update(it.reference, "read", true)
                     }
                 }
             }

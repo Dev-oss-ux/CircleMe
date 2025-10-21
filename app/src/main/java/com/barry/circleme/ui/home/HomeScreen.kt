@@ -25,8 +25,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -56,6 +59,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.barry.circleme.data.Story
 import com.barry.circleme.ui.create_post.Post
+import com.barry.circleme.ui.notifications.NotificationsViewModel
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
@@ -65,10 +69,12 @@ import kotlinx.coroutines.delay
 fun HomeScreen(
     modifier: Modifier = Modifier,
     homeViewModel: HomeViewModel = viewModel(),
+    notificationsViewModel: NotificationsViewModel = viewModel(),
     onSignOut: () -> Unit,
     onUserClick: (String) -> Unit,
     onMessagesClick: () -> Unit,
-    onCommentsClick: (String) -> Unit
+    onCommentsClick: (String) -> Unit,
+    onNotificationsClick: () -> Unit
 ) {
     val posts by homeViewModel.posts.collectAsState()
     val stories by homeViewModel.stories.collectAsState()
@@ -76,6 +82,7 @@ fun HomeScreen(
     var viewedStory by remember { mutableStateOf<Story?>(null) }
     var showAddStoryDialog by remember { mutableStateOf(false) }
     var storyText by remember { mutableStateOf("") }
+    val unreadNotificationCount by notificationsViewModel.unreadNotificationCount.collectAsState()
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -132,10 +139,12 @@ fun HomeScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("CircleMe", fontFamily = FontFamily.Cursive) },
+                title = { Text("CircleMe", fontFamily = FontFamily.Cursive, modifier = Modifier.padding(top = 0.dp)) },
                 actions = {
-                    IconButton(onClick = { /* TODO: Navigate to notifications */ }) {
-                        Icon(Icons.Default.FavoriteBorder, contentDescription = "Notifications")
+                    IconButton(onClick = onNotificationsClick) {
+                        BadgedBox(badge = { if (unreadNotificationCount > 0) Badge { Text("$unreadNotificationCount") } }) {
+                            Icon(Icons.Default.FavoriteBorder, contentDescription = "Notifications")
+                        }
                     }
                     IconButton(onClick = onMessagesClick) {
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Messages")

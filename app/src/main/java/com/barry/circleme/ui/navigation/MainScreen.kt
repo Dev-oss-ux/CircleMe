@@ -16,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -44,12 +45,12 @@ import com.barry.circleme.ui.settings.SettingsScreen
 
 sealed class Screen(
     val route: String,
-    val icon: @Composable (Boolean) -> Unit
+    val icon: @Composable (Int) -> Unit
 ) {
     object Home : Screen(Routes.HOME_SCREEN, { _ -> Icon(Icons.Filled.Home, contentDescription = null) })
     object Discover : Screen(Routes.DISCOVER_SCREEN, { _ -> Icon(Icons.Filled.Search, contentDescription = null) })
-    object Notifications : Screen(Routes.NOTIFICATIONS_SCREEN, { hasNotification ->
-        BadgedBox(badge = { if (hasNotification) Badge() }) {
+    object Notifications : Screen(Routes.NOTIFICATIONS_SCREEN, { unreadCount ->
+        BadgedBox(badge = { if (unreadCount > 0) Badge { Text("$unreadCount") } }) {
             Icon(Icons.Filled.Notifications, contentDescription = null)
         }
     })
@@ -62,7 +63,7 @@ fun MainScreen(appNavController: NavController) {
     val navController = rememberNavController()
     val notificationsViewModel: NotificationsViewModel = viewModel()
     val conversationsViewModel: ConversationsViewModel = viewModel()
-    val hasUnreadNotifications by notificationsViewModel.hasUnreadNotifications.collectAsState(initial = false)
+    val unreadNotificationCount by notificationsViewModel.unreadNotificationCount.collectAsState(initial = 0)
     val bottomBarItems = listOf(Screen.Home, Screen.Discover, Screen.Notifications, Screen.Profile)
 
     Scaffold(
@@ -73,7 +74,7 @@ fun MainScreen(appNavController: NavController) {
 
                 bottomBarItems.take(2).forEach { screen ->
                     NavigationBarItem(
-                        icon = { screen.icon(hasUnreadNotifications) },
+                        icon = { screen.icon(unreadNotificationCount) },
                         selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                         onClick = {
                             navController.navigate(screen.route) {
@@ -95,9 +96,12 @@ fun MainScreen(appNavController: NavController) {
 
                 bottomBarItems.takeLast(2).forEach { screen ->
                     NavigationBarItem(
-                        icon = { screen.icon(hasUnreadNotifications) },
+                        icon = { screen.icon(unreadNotificationCount) },
                         selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                         onClick = {
+                            if (screen.route == Routes.NOTIFICATIONS_SCREEN) {
+                                notificationsViewModel.markNotificationsAsRead()
+                            }
                             navController.navigate(screen.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
@@ -118,7 +122,11 @@ fun MainScreen(appNavController: NavController) {
                         onSignOut = {},
                         onUserClick = { userId -> navController.navigate("${Routes.PROFILE_SCREEN}/$userId") },
                         onMessagesClick = { appNavController.navigate(Routes.MESSAGES_SCREEN) },
-                        onCommentsClick = { postId -> appNavController.navigate("${Routes.COMMENTS_SCREEN}/$postId") }
+                        onCommentsClick = { postId -> appNavController.navigate("${Routes.COMMENTS_SCREEN}/$postId") },
+                        onNotificationsClick = {
+                            notificationsViewModel.markNotificationsAsRead()
+                            navController.navigate(Routes.NOTIFICATIONS_SCREEN)
+                        }
                     )
                 }
                 composable(Routes.DISCOVER_SCREEN) {
