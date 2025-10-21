@@ -25,7 +25,8 @@ fun PostScreen(
     postId: String,
     postViewModel: PostViewModel = viewModel(),
     onNavigateBack: () -> Unit,
-    onUserClick: (String) -> Unit
+    onUserClick: (String) -> Unit,
+    onCommentsClick: (String) -> Unit
 ) {
     val post by postViewModel.post.collectAsState()
 
@@ -53,7 +54,8 @@ fun PostScreen(
             post?.let {
                 PostCard(
                     post = it,
-                    onUserClick = onUserClick
+                    onUserClick = onUserClick,
+                    onCommentsClick = onCommentsClick
                 )
             }
         }

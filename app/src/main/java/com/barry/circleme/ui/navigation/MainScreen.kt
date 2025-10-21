@@ -31,7 +31,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.barry.circleme.ui.comments.CommentsScreen
 import com.barry.circleme.ui.conversations.ConversationsViewModel
+import com.barry.circleme.ui.discover.DiscoverScreen
 import com.barry.circleme.ui.home.HomeScreen
 import com.barry.circleme.ui.notifications.NotificationsScreen
 import com.barry.circleme.ui.notifications.NotificationsViewModel
@@ -45,7 +47,7 @@ sealed class Screen(
     val icon: @Composable (Boolean) -> Unit
 ) {
     object Home : Screen(Routes.HOME_SCREEN, { _ -> Icon(Icons.Filled.Home, contentDescription = null) })
-    object Discover : Screen(Routes.FIND_USER_SCREEN, { _ -> Icon(Icons.Filled.Search, contentDescription = null) })
+    object Discover : Screen(Routes.DISCOVER_SCREEN, { _ -> Icon(Icons.Filled.Search, contentDescription = null) })
     object Notifications : Screen(Routes.NOTIFICATIONS_SCREEN, { hasNotification ->
         BadgedBox(badge = { if (hasNotification) Badge() }) {
             Icon(Icons.Filled.Notifications, contentDescription = null)
@@ -115,12 +117,14 @@ fun MainScreen(appNavController: NavController) {
                     HomeScreen(
                         onSignOut = {},
                         onUserClick = { userId -> navController.navigate("${Routes.PROFILE_SCREEN}/$userId") },
-                        onSearchClick = { appNavController.navigate(Routes.FIND_USER_SCREEN) },
-                        onMessagesClick = { appNavController.navigate(Routes.MESSAGES_SCREEN) }
+                        onMessagesClick = { appNavController.navigate(Routes.MESSAGES_SCREEN) },
+                        onCommentsClick = { postId -> appNavController.navigate("${Routes.COMMENTS_SCREEN}/$postId") }
                     )
                 }
-                composable(Routes.FIND_USER_SCREEN) {
-                    // TODO: Create Discover Screen
+                composable(Routes.DISCOVER_SCREEN) {
+                    DiscoverScreen(
+                        onUserClick = { userId -> navController.navigate("${Routes.PROFILE_SCREEN}/$userId") }
+                    )
                 }
                 composable(Routes.NOTIFICATIONS_SCREEN) {
                     NotificationsScreen(
@@ -173,7 +177,8 @@ fun MainScreen(appNavController: NavController) {
                         PostScreen(
                             postId = postId,
                             onNavigateBack = { navController.popBackStack() },
-                            onUserClick = { userId -> navController.navigate("${Routes.PROFILE_SCREEN}/$userId") }
+                            onUserClick = { userId -> navController.navigate("${Routes.PROFILE_SCREEN}/$userId") },
+                            onCommentsClick = { appNavController.navigate("${Routes.COMMENTS_SCREEN}/$postId") }
                         )
                     }
                 }

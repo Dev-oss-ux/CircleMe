@@ -7,15 +7,13 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.barry.circleme.ui.auth.AuthScreen
 import com.barry.circleme.ui.chat.ChatScreen
-import com.barry.circleme.ui.conversations.ConversationsViewModel
+import com.barry.circleme.ui.comments.CommentsScreen
 import com.barry.circleme.ui.create_post.CreatePostScreen
-import com.barry.circleme.ui.find_user.FindUserScreen
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
@@ -44,21 +42,18 @@ fun AppNavigation() {
             enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(300)) + fadeIn() },
             exitTransition = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(300)) + fadeOut() }
         ) {
-            CreatePostScreen(onPostCreated = { navController.popBackStack() })
+            CreatePostScreen(
+                onPostCreated = { navController.popBackStack() },
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
         composable("${Routes.CHAT_SCREEN}/{recipientId}") {
             ChatScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        composable(Routes.FIND_USER_SCREEN) {
-            val conversationsViewModel: ConversationsViewModel = viewModel()
-            FindUserScreen(
-                onUserClick = { user ->
-                    conversationsViewModel.startConversation(user) {
-                        navController.navigate("${Routes.CHAT_SCREEN}/${user.uid}")
-                    }
-                },
+        composable("${Routes.COMMENTS_SCREEN}/{postId}") {
+            CommentsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

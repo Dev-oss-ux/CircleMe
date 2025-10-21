@@ -65,7 +65,8 @@ import com.google.firebase.ktx.Firebase
 fun PostCard(
     post: Post,
     homeViewModel: HomeViewModel = viewModel(),
-    onUserClick: (String) -> Unit
+    onUserClick: (String) -> Unit,
+    onCommentsClick: (String) -> Unit
 ) {
     val currentUserId = Firebase.auth.currentUser?.uid
     var currentUser by remember { mutableStateOf<User?>(null) }
@@ -221,7 +222,7 @@ fun PostCard(
             PostActionButton(
                 icon = Icons.Outlined.ChatBubbleOutline,
                 contentDescription = "Comment",
-                onClick = { showComments = !showComments }
+                onClick = { onCommentsClick(post.id) }
             )
             PostActionButton(
                 icon = Icons.AutoMirrored.Outlined.Send,
@@ -274,30 +275,8 @@ fun PostCard(
                     color = Color.Gray,
                     modifier = Modifier
                         .padding(top = 4.dp)
-                        .clickable { showComments = true }
+                        .clickable { onCommentsClick(post.id) }
                 )
-            }
-            
-            if (showComments) {
-                comments.forEach { comment ->
-                    CommentItem(comment = comment, homeViewModel = homeViewModel, postId = post.id)
-                }
-            }
-
-            // --- Add Comment Section ---
-            Row(modifier = Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextField(
-                    value = commentText,
-                    onValueChange = { commentText = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Add a comment...") }
-                )
-                IconButton(onClick = { 
-                    homeViewModel.addComment(post.id, post.authorId, commentText)
-                    commentText = "" 
-                }) {
-                    Icon(Icons.AutoMirrored.Outlined.Send, contentDescription = "Send comment")
-                }
             }
         }
     }

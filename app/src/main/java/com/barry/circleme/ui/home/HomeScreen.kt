@@ -65,8 +65,8 @@ fun HomeScreen(
     homeViewModel: HomeViewModel = viewModel(),
     onSignOut: () -> Unit,
     onUserClick: (String) -> Unit,
-    onSearchClick: () -> Unit,
-    onMessagesClick: () -> Unit
+    onMessagesClick: () -> Unit,
+    onCommentsClick: (String) -> Unit
 ) {
     val posts by homeViewModel.posts.collectAsState()
     val stories by homeViewModel.stories.collectAsState()
@@ -174,7 +174,8 @@ fun HomeScreen(
                         PostCard(
                             post = post, 
                             homeViewModel = homeViewModel,
-                            onUserClick = onUserClick
+                            onUserClick = onUserClick,
+                            onCommentsClick = onCommentsClick
                         )
                     }
                 }

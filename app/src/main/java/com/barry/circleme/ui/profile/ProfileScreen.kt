@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -140,7 +141,7 @@ fun ProfileScreen(
                                 .size(100.dp)
                                 .clip(CircleShape)
                         )
-                        Spacer(modifier = Modifier.weight(1f))
+                        Spacer(modifier = Modifier.width(16.dp))
                         Column {
                             Text(displayName, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                             Text(profileUser?.bio ?: "", style = MaterialTheme.typography.bodyMedium)
