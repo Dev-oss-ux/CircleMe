@@ -7,14 +7,18 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.barry.circleme.ui.auth.AuthScreen
 import com.barry.circleme.ui.chat.ChatScreen
 import com.barry.circleme.ui.comments.CommentsScreen
 import com.barry.circleme.ui.conversations.ConversationsScreen
 import com.barry.circleme.ui.create_post.CreatePostScreen
+import com.barry.circleme.ui.video_call.VideoCallScreen
+import com.barry.circleme.ui.voice_call.VoiceCallScreen
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
@@ -48,9 +52,14 @@ fun AppNavigation() {
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        composable("${Routes.CHAT_SCREEN}/{recipientId}") {
+        composable(
+            route = "${Routes.CHAT_SCREEN}/{recipientId}",
+            arguments = listOf(navArgument("recipientId") { type = NavType.StringType })
+        ) {
             ChatScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToVideoCall = { recipientId -> navController.navigate("${Routes.VIDEO_CALL_SCREEN}/$recipientId") },
+                onNavigateToVoiceCall = { recipientId -> navController.navigate("${Routes.VOICE_CALL_SCREEN}/$recipientId") }
             )
         }
         composable(Routes.MESSAGES_SCREEN) {
@@ -65,6 +74,18 @@ fun AppNavigation() {
             CommentsScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
+        }
+        composable(
+            route = "${Routes.VOICE_CALL_SCREEN}/{recipientId}",
+            arguments = listOf(navArgument("recipientId") { type = NavType.StringType })
+        ) {
+            VoiceCallScreen(onNavigateBack = { navController.popBackStack() })
+        }
+        composable(
+            route = "${Routes.VIDEO_CALL_SCREEN}/{recipientId}",
+            arguments = listOf(navArgument("recipientId") { type = NavType.StringType })
+        ) {
+            VideoCallScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

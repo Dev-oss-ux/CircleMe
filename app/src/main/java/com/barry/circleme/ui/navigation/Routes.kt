@@ -9,11 +9,13 @@ object Routes {
     const val DISCOVER_SCREEN = "discover_screen"
     const val SPLASH_SCREEN = "splash_screen"
     const val COMMENTS_SCREEN = "comments_screen"
+    const val MESSAGES_SCREEN = "messages_screen"
+    const val VOICE_CALL_SCREEN = "voice_call_screen"
+    const val VIDEO_CALL_SCREEN = "video_call_screen"
 
     // From old Routes.kt (now standardized)
     const val PROFILE_SCREEN = "profile_screen"
     const val HOME_SCREEN = "home_screen"
-    const val MESSAGES_SCREEN = "messages_screen"
     const val NOTIFICATIONS_SCREEN = "notifications_screen"
     const val EDIT_PROFILE_SCREEN = "edit_profile_screen"
     const val POST_SCREEN = "post_screen"

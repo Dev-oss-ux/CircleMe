@@ -24,19 +24,16 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.TagFaces
 import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -64,8 +61,7 @@ import androidx.core.net.toUri
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.barry.circleme.R
-import com.barry.circleme.data.ChatMessage
-import com.barry.circleme.ui.theme.WhatsAppBackground
+import com.barry.circleme.data.User
 import com.barry.circleme.utils.VoiceRecorder
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -80,7 +76,9 @@ import java.io.File
 fun ChatScreen(
     modifier: Modifier = Modifier,
     chatViewModel: ChatViewModel = viewModel(),
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToVideoCall: (String) -> Unit,
+    onNavigateToVoiceCall: (String) -> Unit
 ) {
     val messages by chatViewModel.messages.collectAsState()
     val recipient by chatViewModel.recipient.collectAsState()
@@ -98,18 +96,21 @@ fun ChatScreen(
         topBar = { 
             ChatTopAppBar(
                 recipient = recipient,
-                onNavigateBack = onNavigateBack
+                onNavigateBack = onNavigateBack,
+                onNavigateToVideoCall = { recipient?.uid?.let { onNavigateToVideoCall(it) } },
+                onNavigateToVoiceCall = { recipient?.uid?.let { onNavigateToVoiceCall(it) } }
             )
          },
         bottomBar = { ChatInputBar(chatViewModel = chatViewModel) }
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize().background(WhatsAppBackground).padding(paddingValues)) {
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                 items(messages) { message ->
                     ChatMessageItem(
                         message = message,
                         isSentByCurrentUser = message.senderId == currentUserId,
-                        chatViewModel = chatViewModel
+                        chatViewModel = chatViewModel,
+                        recipient = recipient
                     )
                 }
             }
@@ -119,7 +120,7 @@ fun ChatScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChatTopAppBar(recipient: com.barry.circleme.data.User?, onNavigateBack: () -> Unit) {
+fun ChatTopAppBar(recipient: User?, onNavigateBack: () -> Unit, onNavigateToVideoCall: () -> Unit, onNavigateToVoiceCall: () -> Unit) {
     TopAppBar(
         title = {
             Row(
@@ -141,11 +142,11 @@ fun ChatTopAppBar(recipient: com.barry.circleme.data.User?, onNavigateBack: () -
             }
         },
         actions = {
-            IconButton(onClick = { /* TODO */ }) {
+            IconButton(onClick = onNavigateToVideoCall) {
                 Icon(Icons.Default.Videocam, contentDescription = "Video call")
             }
-            IconButton(onClick = { /* TODO */ }) {
-                Icon(Icons.Default.MoreVert, contentDescription = "More options")
+            IconButton(onClick = onNavigateToVoiceCall) {
+                Icon(Icons.Default.Call, contentDescription = "Call")
             }
         }
     )
@@ -169,62 +170,46 @@ fun ChatInputBar(chatViewModel: ChatViewModel) {
         VoiceRecordingState.IDLE -> {
              Row(
                 modifier = Modifier
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                    .background(Color.Transparent),
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Card(
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(24.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.background(Color.White).height(48.dp)) {
-                        TextField(
-                            value = newMessageText,
-                            onValueChange = { chatViewModel.onNewMessageChange(it) },
-                            modifier = Modifier.weight(1f),
-                            placeholder = { Text(stringResource(R.string.type_a_message)) },
-                            colors = TextFieldDefaults.colors(
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent
-                            ),
-                            trailingIcon = {
-                                Row {
-                                    IconButton(onClick = { /*TODO*/ }) {
-                                        Icon(Icons.Default.AttachFile, contentDescription = "Attach File")
-                                    }
-                                    IconButton(onClick = { /*TODO*/ }) {
-                                        Icon(Icons.Default.PhotoCamera, contentDescription = "Camera")
-                                    }
-                                }
-                            }
-                        )
-                    }
+                IconButton(onClick = { /* TODO: Implement attachment options */ }) {
+                    Icon(Icons.Default.Add, contentDescription = "Attach file")
                 }
-
-                Spacer(Modifier.width(8.dp))
-
-                FloatingActionButton(
-                    onClick = {
-                        if (newMessageText.isNotBlank()) {
-                            chatViewModel.sendTextMessage()
-                        } else {
-                            if (recordAudioPermissionState.status.isGranted) {
-                                chatViewModel.onStartRecording()
-                            } else {
-                                launcher.launch(Manifest.permission.RECORD_AUDIO)
-                            }
+                TextField(
+                    value = newMessageText,
+                    onValueChange = { chatViewModel.onNewMessageChange(it) },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text(stringResource(R.string.type_a_message)) },
+                    shape = RoundedCornerShape(24.dp),
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                    ),
+                    trailingIcon = {
+                        IconButton(onClick = { /*TODO: Implement emoji picker*/ }) {
+                            Icon(Icons.Default.TagFaces, contentDescription = "Emoji")
                         }
-                    },
-                    shape = CircleShape,
-                    containerColor = MaterialTheme.colorScheme.primary
-                ) {
+                    }
+                )
+                Spacer(Modifier.width(8.dp))
+                IconButton(onClick = {
+                    if (newMessageText.isNotBlank()) {
+                        chatViewModel.sendTextMessage()
+                    } else {
+                        if (recordAudioPermissionState.status.isGranted) {
+                            chatViewModel.onStartRecording()
+                        } else {
+                            launcher.launch(Manifest.permission.RECORD_AUDIO)
+                        }
+                    }
+                }) {
                     Icon(
                         imageVector = if (newMessageText.isNotBlank()) Icons.Default.Send else Icons.Default.Mic,
                         contentDescription = if (newMessageText.isNotBlank()) "Send" else "Record",
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(32.dp)
                     )
                 }
             }
