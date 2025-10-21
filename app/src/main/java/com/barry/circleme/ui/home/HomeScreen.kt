@@ -65,7 +65,8 @@ fun HomeScreen(
     homeViewModel: HomeViewModel = viewModel(),
     onSignOut: () -> Unit,
     onUserClick: (String) -> Unit,
-    onSearchClick: () -> Unit
+    onSearchClick: () -> Unit,
+    onMessagesClick: () -> Unit
 ) {
     val posts by homeViewModel.posts.collectAsState()
     val stories by homeViewModel.stories.collectAsState()
@@ -90,31 +91,36 @@ fun HomeScreen(
             title = { Text("Create a Story") },
             text = {
                 Column {
-                    Text("Would you like to create a text or image story?")
+                    Text("Share a moment with your followers.")
                     Spacer(modifier = Modifier.height(16.dp))
                     TextField(
                         value = storyText,
                         onValueChange = { storyText = it },
-                        placeholder = { Text("Enter your story text...") }
+                        placeholder = { Text("Or just type something...") }
                     )
                 }
             },
             confirmButton = {
-                Button(onClick = { 
-                    if (storyText.isNotBlank()) {
-                        homeViewModel.createStory(storyText = storyText)
+                Row {
+                    TextButton(onClick = { 
+                        imagePickerLauncher.launch("image/*")
                         showAddStoryDialog = false
+                     }) {
+                        Text("Image")
                     }
-                 }) {
-                    Text("Post Text")
+                    TextButton(onClick = { 
+                        if (storyText.isNotBlank()) {
+                            homeViewModel.createStory(storyText = storyText)
+                            showAddStoryDialog = false
+                        }
+                     }) {
+                        Text("Text")
+                    }
                 }
             },
             dismissButton = {
-                Button(onClick = { 
-                    imagePickerLauncher.launch("image/*")
-                    showAddStoryDialog = false
-                 }) {
-                    Text("Post Image")
+                TextButton(onClick = { showAddStoryDialog = false }) {
+                    Text("Cancel")
                 }
             }
         )
@@ -129,7 +135,7 @@ fun HomeScreen(
                     IconButton(onClick = { /* TODO: Navigate to notifications */ }) {
                         Icon(Icons.Default.FavoriteBorder, contentDescription = "Notifications")
                     }
-                    IconButton(onClick = { /* TODO: Navigate to messages */ }) {
+                    IconButton(onClick = onMessagesClick) {
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Messages")
                     }
                 }
@@ -162,7 +168,6 @@ fun HomeScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(posts, key = { it.id }) { post ->

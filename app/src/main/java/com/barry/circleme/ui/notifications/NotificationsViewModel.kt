@@ -49,6 +49,18 @@ class NotificationsViewModel : ViewModel() {
         }
     }
 
+    fun clearAllNotifications() {
+        val userId = auth.currentUser?.uid ?: return
+        firestore.collection("notifications")
+            .whereEqualTo("userId", userId)
+            .get()
+            .addOnSuccessListener { snapshots ->
+                firestore.runBatch { batch ->
+                    snapshots.documents.forEach { batch.delete(it.reference) }
+                }
+            }
+    }
+
     fun acceptFollowRequest(notification: Notification) {
         val currentUser = auth.currentUser ?: return
         val actorId = notification.actorId

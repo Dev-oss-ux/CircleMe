@@ -6,9 +6,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -16,7 +16,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -32,7 +31,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.barry.circleme.ui.conversations.ConversationsScreen
 import com.barry.circleme.ui.conversations.ConversationsViewModel
 import com.barry.circleme.ui.home.HomeScreen
 import com.barry.circleme.ui.notifications.NotificationsScreen
@@ -44,20 +42,16 @@ import com.barry.circleme.ui.settings.SettingsScreen
 
 sealed class Screen(
     val route: String,
-    val icon: @Composable (Int, Boolean) -> Unit
+    val icon: @Composable (Boolean) -> Unit
 ) {
-    object Home : Screen(Routes.HOME_SCREEN, { _, _ -> Icon(Icons.Filled.Home, contentDescription = null) })
-    object Messages : Screen(Routes.MESSAGES_SCREEN, { unreadCount, _ ->
-        BadgedBox(badge = { if (unreadCount > 0) Badge { Text(unreadCount.toString()) } }) {
-            Icon(Icons.Filled.Message, contentDescription = null)
-        }
-    })
-    object Notifications : Screen(Routes.NOTIFICATIONS_SCREEN, { _, hasNotification ->
+    object Home : Screen(Routes.HOME_SCREEN, { _ -> Icon(Icons.Filled.Home, contentDescription = null) })
+    object Discover : Screen(Routes.FIND_USER_SCREEN, { _ -> Icon(Icons.Filled.Search, contentDescription = null) })
+    object Notifications : Screen(Routes.NOTIFICATIONS_SCREEN, { hasNotification ->
         BadgedBox(badge = { if (hasNotification) Badge() }) {
             Icon(Icons.Filled.Notifications, contentDescription = null)
         }
     })
-    object Profile : Screen(Routes.PROFILE_SCREEN, { _, _ -> Icon(Icons.Filled.Person, contentDescription = null) })
+    object Profile : Screen(Routes.PROFILE_SCREEN, { _ -> Icon(Icons.Filled.Person, contentDescription = null) })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,8 +61,7 @@ fun MainScreen(appNavController: NavController) {
     val notificationsViewModel: NotificationsViewModel = viewModel()
     val conversationsViewModel: ConversationsViewModel = viewModel()
     val hasUnreadNotifications by notificationsViewModel.hasUnreadNotifications.collectAsState(initial = false)
-    val totalUnreadMessages by conversationsViewModel.totalUnreadCount.collectAsState(initial = 0)
-    val bottomBarItems = listOf(Screen.Home, Screen.Messages, Screen.Notifications, Screen.Profile)
+    val bottomBarItems = listOf(Screen.Home, Screen.Discover, Screen.Notifications, Screen.Profile)
 
     Scaffold(
         bottomBar = {
@@ -76,10 +69,9 @@ fun MainScreen(appNavController: NavController) {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
 
-                // Items 1 & 2
                 bottomBarItems.take(2).forEach { screen ->
                     NavigationBarItem(
-                        icon = { screen.icon(totalUnreadMessages, hasUnreadNotifications) },
+                        icon = { screen.icon(hasUnreadNotifications) },
                         selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                         onClick = {
                             navController.navigate(screen.route) {
@@ -93,17 +85,15 @@ fun MainScreen(appNavController: NavController) {
                     )
                 }
 
-                // Item 3: The Create Post Button
                 NavigationBarItem(
                     selected = false,
                     onClick = { appNavController.navigate(Routes.CREATE_POST_SCREEN) },
                     icon = { Icon(Icons.Filled.AddCircle, contentDescription = "Create Post", modifier = Modifier.size(36.dp)) }
                 )
 
-                // Items 4 & 5
                 bottomBarItems.takeLast(2).forEach { screen ->
                     NavigationBarItem(
-                        icon = { screen.icon(totalUnreadMessages, hasUnreadNotifications) },
+                        icon = { screen.icon(hasUnreadNotifications) },
                         selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                         onClick = {
                             navController.navigate(screen.route) {
@@ -125,22 +115,19 @@ fun MainScreen(appNavController: NavController) {
                     HomeScreen(
                         onSignOut = {},
                         onUserClick = { userId -> navController.navigate("${Routes.PROFILE_SCREEN}/$userId") },
-                        onSearchClick = { appNavController.navigate(Routes.FIND_USER_SCREEN) }
+                        onSearchClick = { appNavController.navigate(Routes.FIND_USER_SCREEN) },
+                        onMessagesClick = { appNavController.navigate(Routes.MESSAGES_SCREEN) }
                     )
                 }
-                composable(Routes.MESSAGES_SCREEN) {
-                    ConversationsScreen(
-                        onConversationClick = { recipientId ->
-                            appNavController.navigate("${Routes.CHAT_SCREEN}/$recipientId")
-                        }
-                    )
-                 }
+                composable(Routes.FIND_USER_SCREEN) {
+                    // TODO: Create Discover Screen
+                }
                 composable(Routes.NOTIFICATIONS_SCREEN) {
                     NotificationsScreen(
                         onNotificationClick = { postId -> navController.navigate("${Routes.POST_SCREEN}/$postId") },
-                        modifier = TODO(),
-                        notificationsViewModel = TODO(),
-                        onUserClick = TODO()
+                        onUserClick = { userId -> navController.navigate("${Routes.PROFILE_SCREEN}/$userId") },
+                        onSettingsClick = { navController.navigate(Routes.SETTINGS_SCREEN) },
+                        onMessagesClick = { appNavController.navigate(Routes.MESSAGES_SCREEN) }
                     )
                 }
                 composable(Routes.PROFILE_SCREEN) {
@@ -151,7 +138,8 @@ fun MainScreen(appNavController: NavController) {
                             appNavController.navigate(Routes.AUTH_SCREEN) {
                                 popUpTo(Routes.MAIN_SCREEN) { inclusive = true }
                             }
-                        }
+                        },
+                        onBackClick = { navController.popBackStack() }
                     )
                 }
                 composable(
@@ -167,7 +155,8 @@ fun MainScreen(appNavController: NavController) {
                             appNavController.navigate(Routes.AUTH_SCREEN) {
                                 popUpTo(Routes.MAIN_SCREEN) { inclusive = true }
                             }
-                        }
+                        },
+                        onBackClick = { navController.popBackStack() }
                     )
                 }
                 composable(Routes.EDIT_PROFILE_SCREEN) {

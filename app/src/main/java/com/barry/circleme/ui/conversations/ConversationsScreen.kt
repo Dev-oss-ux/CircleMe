@@ -1,13 +1,14 @@
 package com.barry.circleme.ui.conversations
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -15,18 +16,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Badge
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Divider
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -45,7 +46,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.barry.circleme.data.Conversation
-import com.barry.circleme.data.User
 import com.barry.circleme.utils.TimeUtils
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -55,60 +55,62 @@ import com.google.firebase.ktx.Firebase
 fun ConversationsScreen(
     modifier: Modifier = Modifier,
     conversationsViewModel: ConversationsViewModel = viewModel(),
-    onConversationClick: (recipientId: String) -> Unit
+    onConversationClick: (recipientId: String) -> Unit,
+    onNavigateBack: () -> Unit
 ) {
     val conversations by conversationsViewModel.conversations.collectAsState()
-    val users by conversationsViewModel.users.collectAsState()
+    var searchQuery by remember { mutableStateOf("") }
     val currentUserId = Firebase.auth.currentUser?.uid
-    var showUserMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = { Text("Messages") },
+                navigationIcon = { 
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
                 actions = {
-                    Box {
-                        IconButton(onClick = { showUserMenu = !showUserMenu }) {
-                            Icon(Icons.Default.Add, contentDescription = "New Conversation")
-                        }
-                        DropdownMenu(
-                            expanded = showUserMenu,
-                            onDismissRequest = { showUserMenu = false }
-                        ) {
-                            users.forEach { user ->
-                                DropdownMenuItem(
-                                    text = { Text(user.displayName ?: "") },
-                                    onClick = { 
-                                        conversationsViewModel.startConversation(user) { 
-                                            onConversationClick(user.uid)
-                                        }
-                                        showUserMenu = false
-                                     }
-                                )
-                            }
-                        }
+                    IconButton(onClick = { /* TODO: New Conversation */ }) {
+                        Icon(Icons.Default.Add, contentDescription = "New Conversation")
                     }
                 }
             )
         }
     ) { paddingValues ->
-        LazyColumn(modifier = Modifier.padding(paddingValues)) {
-            items(conversations) { conversation ->
-                val unreadCount = conversation.unreadCount[currentUserId] ?: 0
-                ConversationItem(
-                    conversation = conversation,
-                    currentUserId = currentUserId ?: "",
-                    unreadCount = unreadCount.toInt(),
-                    onClick = { onConversationClick(it) }
+        Column(modifier = Modifier.padding(paddingValues)) {
+            TextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                placeholder = { Text("Search") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                shape = CircleShape,
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
                 )
-                Divider()
+            )
+            LazyColumn {
+                items(conversations) { conversation ->
+                    val unreadCount = conversation.unreadCount[currentUserId] ?: 0
+                    ConversationItem(
+                        conversation = conversation,
+                        currentUserId = currentUserId ?: "",
+                        unreadCount = unreadCount.toInt(),
+                        onClick = { onConversationClick(it) }
+                    )
+                    Divider(color = Color.LightGray)
+                }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConversationItem(
     conversation: Conversation,
@@ -123,69 +125,53 @@ fun ConversationItem(
 
     Row(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .clickable { onClick(otherParticipantId) }
-            .background(if (isUnread) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            if (otherParticipantPhoto.isNotBlank()) {
-                AsyncImage(
-                    model = otherParticipantPhoto,
-                    contentDescription = "Profile picture of $otherParticipantName",
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .background(Color.Gray, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Default profile picture",
-                        tint = Color.White,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-            if (isUnread) {
-                Badge(modifier = Modifier.align(Alignment.BottomEnd)) {
-                     Text(unreadCount.toString())
-                 }
-            }
-        }
+        AsyncImage(
+            model = otherParticipantPhoto,
+            contentDescription = "Profile picture of $otherParticipantName",
+            modifier = Modifier
+                .size(56.dp)
+                .clip(CircleShape)
+        )
 
         Spacer(modifier = Modifier.width(16.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = otherParticipantName,
-                fontWeight = if (isUnread) FontWeight.Bold else FontWeight.Normal,
-                fontSize = 17.sp
-            )
-            Text(
-                text = conversation.lastMessage,
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (isUnread) MaterialTheme.colorScheme.onSurface else Color.Gray,
-                fontWeight = if (isUnread) FontWeight.Bold else FontWeight.Normal,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-
-        Spacer(modifier = Modifier.width(16.dp))
-
-        conversation.lastMessageTimestamp?.let {
-            Text(
-                text = TimeUtils.formatTimestamp(it),
-                style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray
-            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(
+                    text = otherParticipantName,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp
+                )
+                conversation.lastMessageTimestamp?.let {
+                    Text(
+                        text = TimeUtils.formatTimestamp(it),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(
+                    text = conversation.lastMessage,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                if (isUnread) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    )
+                }
+            }
         }
     }
 }

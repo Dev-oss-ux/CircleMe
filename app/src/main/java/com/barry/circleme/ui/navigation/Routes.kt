@@ -7,6 +7,7 @@ object Routes {
     const val CREATE_POST_SCREEN = "create_post_screen"
     const val CHAT_SCREEN = "chat_screen"
     const val FIND_USER_SCREEN = "find_user_screen"
+    const val SPLASH_SCREEN = "splash_screen"
 
     // From old Routes.kt (now standardized)
     const val PROFILE_SCREEN = "profile_screen"

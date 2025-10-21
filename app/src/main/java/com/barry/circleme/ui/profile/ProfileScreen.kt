@@ -25,20 +25,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.AddBox
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.AccountBox
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.BookmarkBorder
-import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -75,6 +68,7 @@ fun ProfileScreen(
     profileViewModel: ProfileViewModel = viewModel(),
     onSignOut: () -> Unit,
     onEditProfile: () -> Unit,
+    onBackClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
     val displayName by profileViewModel.displayName.collectAsState()
@@ -89,7 +83,6 @@ fun ProfileScreen(
     val followStatus by profileViewModel.followStatus.collectAsState()
     val isCurrentUserProfile by profileViewModel.isCurrentUserProfile.collectAsState()
     val isLoading by profileViewModel.isLoading.collectAsState()
-    var showMenu by remember { mutableStateOf(false) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -112,37 +105,16 @@ fun ProfileScreen(
         topBar = {
             TopAppBar(
                 title = { Text(profileUser?.username ?: "", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    if (!isCurrentUserProfile) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                },
                 actions = {
-                    if (isCurrentUserProfile) {
-                        IconButton(onClick = { /* TODO */ }) {
-                            Icon(Icons.Default.AddBox, contentDescription = "Add Post")
-                        }
-                        Box {
-                            IconButton(onClick = { showMenu = true }) {
-                                Icon(Icons.Default.Menu, contentDescription = "Menu")
-                            }
-                            DropdownMenu(
-                                expanded = showMenu,
-                                onDismissRequest = { showMenu = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Settings") },
-                                    onClick = { 
-                                        onSettingsClick()
-                                        showMenu = false 
-                                    },
-                                    leadingIcon = { Icon(Icons.Default.Settings, contentDescription = null) }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Logout") },
-                                    onClick = { 
-                                        profileViewModel.signOut()
-                                        showMenu = false 
-                                    },
-                                    leadingIcon = { Icon(Icons.Default.ExitToApp, contentDescription = null) }
-                                )
-                            }
-                        }
+                    IconButton(onClick = { /* TODO */ }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
                     }
                 }
             )
@@ -158,91 +130,77 @@ fun ProfileScreen(
                     .verticalScroll(rememberScrollState())
             ) {
                 // --- Bio Section ---
-                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        AsyncImage(
+                            model = photoUrl,
+                            contentDescription = "Profile Picture",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(CircleShape)
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Column {
+                            Text(displayName, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                            Text(profileUser?.bio ?: "", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // --- Action Buttons ---
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceAround
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Box(modifier = Modifier.clickable { imagePickerLauncher.launch("image/*") }) {
-                             AsyncImage(
-                                model = photoUrl,
-                                contentDescription = "Profile Picture",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .size(100.dp)
-                                    .clip(CircleShape)
-                                    .border(2.dp, Color.Gray, CircleShape)
-                            )
-                            if (isCurrentUserProfile) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "Edit Photo",
-                                    tint = Color.White,
-                                    modifier = Modifier
-                                        .align(Alignment.BottomEnd)
-                                        .size(28.dp)
-                                        .background(MaterialTheme.colorScheme.primary, CircleShape)
-                                        .padding(4.dp)
-                                )
+                        if (isCurrentUserProfile) {
+                            Button(
+                                onClick = { onEditProfile() },
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text("Edit Profile")
+                            }
+                            Button(
+                                onClick = { /* TODO: Share Profile */ },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)
+                            ) {
+                                Text("Share Profile", color = Color.Black)
+                            }
+                        } else {
+                            Button(
+                                onClick = { profileViewModel.handleFollowAction() },
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text(text = when (followStatus) {
+                                    FollowStatus.FOLLOWING -> "Unfollow"
+                                    FollowStatus.NOT_FOLLOWING -> "Follow"
+                                    FollowStatus.REQUESTED -> "Requested"
+                                })
                             }
                         }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // --- Stats ---
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ) {
                         StatColumn(title = "Posts", value = postCount.toString())
                         StatColumn(title = "Followers", value = followersCount.toString())
                         StatColumn(title = "Following", value = followingCount.toString())
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(displayName, fontWeight = FontWeight.Bold)
-                    Text(profileUser?.bio ?: "", style = MaterialTheme.typography.bodyMedium)
-                }
-                
-                // --- Action Buttons ---
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (isCurrentUserProfile) {
-                        Button(
-                            onClick = { onEditProfile() },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)
-                        ) {
-                            Text("Edit Profile", color = Color.Black)
-                        }
-                         Button(
-                            onClick = { /* TODO: Share Profile */ },
-                            modifier = Modifier.weight(1f),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray)
-                        ) {
-                            Text("Share Profile", color = Color.Black)
-                        }
-                    } else {
-                        Button(
-                            onClick = { profileViewModel.handleFollowAction() },
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Text(text = when (followStatus) {
-                                FollowStatus.FOLLOWING -> "Unfollow"
-                                FollowStatus.NOT_FOLLOWING -> "Follow"
-                                FollowStatus.REQUESTED -> "Requested"
-                            })
-                        }
                     }
                 }
 
                 // --- Post Grid ---
                 val (selectedTab, setSelectedTab) = remember { mutableStateOf(0) }
-                TabRow(selectedTabIndex = selectedTab) {
+                TabRow(selectedTabIndex = selectedTab, modifier = Modifier.padding(top = 16.dp)) {
                     Tab(selected = selectedTab == 0, onClick = { setSelectedTab(0) }) {
                          Icon(Icons.Default.GridView, "Grid", modifier = Modifier.padding(8.dp)) 
                     }
                     Tab(selected = selectedTab == 1, onClick = { setSelectedTab(1) }) {
                          Icon(if (selectedTab == 1) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder, "Reels", modifier = Modifier.padding(8.dp)) 
-                    }
-                    Tab(selected = selectedTab == 2, onClick = { setSelectedTab(2) }) {
-                        Icon(Icons.Outlined.AccountBox, "Tagged", modifier = Modifier.padding(8.dp)) 
                     }
                 }
                 
