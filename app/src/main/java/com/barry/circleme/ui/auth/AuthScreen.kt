@@ -29,10 +29,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -102,30 +104,41 @@ fun AuthScreen(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 64.dp, bottom = 32.dp)
             )
+            
+            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+                Text("Email or Username", style = MaterialTheme.typography.labelMedium)
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { authViewModel.onEmailChange(it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Enter your email or username") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(25.dp),
+                )
+            }
 
-            TextField(
-                value = email,
-                onValueChange = { authViewModel.onEmailChange(it) },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Email or Username") },
-                singleLine = true
-            )
             Spacer(modifier = Modifier.height(16.dp))
-            TextField(
-                value = password,
-                onValueChange = { authViewModel.onPasswordChange(it) },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Password") },
-                singleLine = true,
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                trailingIcon = {
-                    val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(imageVector = image, contentDescription = if (passwordVisible) "Hide password" else "Show password")
-                    }
-                }
-            )
+            
+            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+                 Text("Password", style = MaterialTheme.typography.labelMedium)
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { authViewModel.onPasswordChange(it) },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Enter your password") },
+                    singleLine = true,
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(imageVector = image, contentDescription = if (passwordVisible) "Hide password" else "Show password")
+                        }
+                    },
+                    shape = RoundedCornerShape(25.dp),
+                )
+            }
+            
             TextButton(onClick = { /* TODO */ }, modifier = Modifier.align(Alignment.End)) {
                 Text("Forgot Password?")
             }
@@ -136,10 +149,11 @@ fun AuthScreen(
             } else {
                 Button(
                     onClick = { authViewModel.signInWithEmailPassword() },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    shape = RoundedCornerShape(25.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF007AFF))
                 ) {
-                    Text("Login", modifier = Modifier.padding(8.dp))
+                    Text("Login", fontSize = 18.sp)
                 }
             }
 
@@ -176,19 +190,17 @@ fun AuthScreen(
                     }
                  },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(25.dp)
             ) {
-                Icon(painter = painterResource(id = R.drawable.ic_launcher_foreground), contentDescription = "Google sign-in", tint = Color.Unspecified)
-                Text("Continue with Google", modifier = Modifier.padding(start = 8.dp))
+                Text("Continue with Google", modifier = Modifier.padding(8.dp))
             }
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedButton(
                 onClick = { /* TODO: Facebook Sign In */ },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(25.dp)
             ) {
-                Icon(painter = painterResource(id = R.drawable.ic_launcher_foreground), contentDescription = "Facebook sign-in", tint = Color.Unspecified)
-                Text("Continue with Facebook", modifier = Modifier.padding(start = 8.dp))
+                Text("Continue with Facebook", modifier = Modifier.padding(8.dp))
             }
 
             Spacer(modifier = Modifier.weight(1f))
