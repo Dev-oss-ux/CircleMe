@@ -56,6 +56,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.barry.circleme.data.Story
 import com.barry.circleme.ui.create_post.Post
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -186,18 +188,31 @@ fun HomeScreen(
 
 @Composable
 fun AddStoryItem(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val currentUser = Firebase.auth.currentUser
     Column(
         modifier = modifier.clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
             modifier = Modifier
-                .size(70.dp)
-                .clip(CircleShape)
-                .border(2.dp, Color.Gray, CircleShape),
+                .size(70.dp),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Default.AddCircle, contentDescription = "Add Story")
+            AsyncImage(
+                model = currentUser?.photoUrl,
+                contentDescription = "Your Story",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .border(2.dp, Color.Gray, CircleShape),
+                contentScale = ContentScale.Crop
+            )
+            Icon(
+                imageVector = Icons.Default.AddCircle, 
+                contentDescription = "Add Story",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.align(Alignment.BottomEnd)
+            )
         }
         Text("Your Story", style = MaterialTheme.typography.bodySmall)
     }
