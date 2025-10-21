@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
@@ -48,7 +49,8 @@ fun VoiceCallScreen(onNavigateBack: () -> Unit, voiceCallViewModel: VoiceCallVie
             contentDescription = "Recipient profile picture",
             modifier = Modifier
                 .size(150.dp)
-                .clip(CircleShape)
+                .clip(CircleShape),
+            contentScale = ContentScale.Crop
         )
         Spacer(modifier = Modifier.height(120.dp))
         Row(

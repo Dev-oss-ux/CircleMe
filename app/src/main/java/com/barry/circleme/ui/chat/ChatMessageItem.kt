@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -80,7 +81,8 @@ fun ChatMessageItem(
                 contentDescription = "Recipient profile picture",
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(CircleShape)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
             )
             Spacer(modifier = Modifier.width(8.dp))
         }
@@ -106,7 +108,8 @@ fun ChatMessageItem(
                 contentDescription = "My profile picture",
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(CircleShape)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
             )
         }
     }
