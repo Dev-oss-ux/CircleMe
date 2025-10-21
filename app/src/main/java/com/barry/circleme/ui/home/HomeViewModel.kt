@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.util.Calendar
 import java.util.Date
 import java.util.UUID
 
@@ -80,7 +81,12 @@ class HomeViewModel : ViewModel() {
     }
 
     private fun fetchStories() {
+        val twentyFourHoursAgo = Calendar.getInstance().apply {
+            add(Calendar.HOUR_OF_DAY, -24)
+        }.time
+
         firestore.collection("stories")
+            .whereGreaterThan("timestamp", twentyFourHoursAgo)
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshots, e ->
                 if (e != null) {
@@ -105,7 +111,8 @@ class HomeViewModel : ViewModel() {
                 userId = currentUser.uid,
                 username = currentUser.displayName ?: "",
                 userProfilePictureUrl = currentUser.photoUrl?.toString(),
-                imageUrl = downloadUrl
+                imageUrl = downloadUrl,
+                timestamp = Date()
             )
 
             firestore.collection("stories").add(story).await()
@@ -120,7 +127,8 @@ class HomeViewModel : ViewModel() {
                 userId = currentUser.uid,
                 username = currentUser.displayName ?: "",
                 userProfilePictureUrl = currentUser.photoUrl?.toString(),
-                text = storyText
+                text = storyText,
+                timestamp = Date()
             )
 
             firestore.collection("stories").add(story).await()
