@@ -1,5 +1,6 @@
 package com.barry.circleme.ui.settings
 
+import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -41,6 +42,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,15 +51,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
+import com.barry.circleme.ui.theme.ThemeViewModel
+import com.barry.circleme.ui.theme.ThemeViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onNavigateBack: () -> Unit, onSignOut: () -> Unit) {
     var searchQuery by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val sharedPreferences = context.getSharedPreferences("theme_prefs", Context.MODE_PRIVATE)
+    val themeViewModelFactory = ThemeViewModelFactory(sharedPreferences)
+    val themeViewModel = ViewModelProvider(LocalContext.current as androidx.lifecycle.ViewModelStoreOwner, themeViewModelFactory)[ThemeViewModel::class.java]
+    val isDarkTheme by themeViewModel.isDarkTheme.collectAsState()
 
     Scaffold(
         topBar = {
@@ -111,7 +122,15 @@ fun SettingsScreen(onNavigateBack: () -> Unit, onSignOut: () -> Unit) {
 
             item { SectionTitle("General") }
             item { SettingsItem(icon = Icons.Default.Language, title = "Language", value = "English", showArrow = true) }
-            item { SettingsItem(icon = Icons.Default.DarkMode, title = "Dark Mode", isSwitch = true) }
+            item { 
+                SettingsItem(
+                    icon = Icons.Default.DarkMode, 
+                    title = "Dark Mode", 
+                    isSwitch = true, 
+                    isChecked = isDarkTheme,
+                    onCheckedChange = { themeViewModel.toggleTheme() }
+                ) 
+            }
             item { SettingsItem(icon = Icons.Default.Storage, title = "Data Usage", showArrow = true) }
             
             item { SectionTitle("Support & Legal") }
@@ -160,9 +179,9 @@ fun SettingsItem(
     value: String? = null,
     isSwitch: Boolean = false,
     isChecked: Boolean = false,
-    showArrow: Boolean = false
+    showArrow: Boolean = false,
+    onCheckedChange: (Boolean) -> Unit = {}
 ) {
-    var switchState by remember { mutableStateOf(isChecked) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -178,7 +197,7 @@ fun SettingsItem(
             Text(text = value, color = Color.Gray)
         }
         if (isSwitch) {
-            Switch(checked = switchState, onCheckedChange = { switchState = it })
+            Switch(checked = isChecked, onCheckedChange = onCheckedChange)
         }
         if (showArrow) {
             Icon(Icons.Default.ArrowForwardIos, contentDescription = null, tint = Color.Gray)
