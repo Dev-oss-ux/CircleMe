@@ -142,7 +142,7 @@ fun VoiceMessageContent(message: ChatMessage) {
     val totalDuration = remember { message.duration?.let { TimeUnit.SECONDS.toMillis(it) } ?: 0L }
 
     LaunchedEffect(message.audioUrl) {
-        message.audioUrl?.let { 
+        message.audioUrl?.let {
             try {
                 mediaPlayer.setDataSource(it)
                 mediaPlayer.prepareAsync()

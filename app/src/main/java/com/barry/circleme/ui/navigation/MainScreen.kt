@@ -32,7 +32,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.barry.circleme.ui.chat.AiChatScreen
 import com.barry.circleme.ui.comments.CommentsScreen
 import com.barry.circleme.ui.conversations.ConversationsViewModel
 import com.barry.circleme.ui.discover.DiscoverScreen
@@ -50,7 +49,11 @@ sealed class Screen(
 ) {
     object Home : Screen(Routes.HOME_SCREEN, { _ -> Icon(Icons.Filled.Home, contentDescription = null) })
     object Discover : Screen(Routes.DISCOVER_SCREEN, { _ -> Icon(Icons.Filled.Search, contentDescription = null) })
-    object AiChat : Screen(Routes.AI_CHAT_SCREEN, { _ -> Icon(Icons.Filled.Notifications, contentDescription = null) })
+    object Notifications : Screen(Routes.NOTIFICATIONS_SCREEN, { unreadCount ->
+        BadgedBox(badge = { if (unreadCount > 0) Badge { Text("$unreadCount") } }) {
+            Icon(Icons.Filled.Notifications, contentDescription = null)
+        }
+    })
     object Profile : Screen(Routes.PROFILE_SCREEN, { _ -> Icon(Icons.Filled.Person, contentDescription = null) })
 }
 
@@ -61,7 +64,7 @@ fun MainScreen(appNavController: NavController) {
     val notificationsViewModel: NotificationsViewModel = viewModel()
     val conversationsViewModel: ConversationsViewModel = viewModel()
     val unreadNotificationCount by notificationsViewModel.unreadNotificationCount.collectAsState(initial = 0)
-    val bottomBarItems = listOf(Screen.Home, Screen.Discover, Screen.AiChat, Screen.Profile)
+    val bottomBarItems = listOf(Screen.Home, Screen.Discover, Screen.Notifications, Screen.Profile)
 
     Scaffold(
         bottomBar = {
@@ -96,6 +99,9 @@ fun MainScreen(appNavController: NavController) {
                         icon = { screen.icon(unreadNotificationCount) },
                         selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                         onClick = {
+                            if (screen.route == Routes.NOTIFICATIONS_SCREEN) {
+                                notificationsViewModel.markNotificationsAsRead()
+                            }
                             navController.navigate(screen.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
@@ -114,32 +120,83 @@ fun MainScreen(appNavController: NavController) {
                 composable(Routes.HOME_SCREEN) {
                     HomeScreen(
                         onSignOut = {},
-                        onUserClick = { userId -> appNavController.navigate("${Routes.PROFILE_SCREEN}/$userId") },
+                        onUserClick = { userId -> navController.navigate("${Routes.PROFILE_SCREEN}/$userId") },
                         onMessagesClick = { appNavController.navigate(Routes.MESSAGES_SCREEN) },
                         onCommentsClick = { postId -> appNavController.navigate("${Routes.COMMENTS_SCREEN}/$postId") },
                         onNotificationsClick = {
-                            navController.navigate(Routes.AI_CHAT_SCREEN)
+                            notificationsViewModel.markNotificationsAsRead()
+                            navController.navigate(Routes.NOTIFICATIONS_SCREEN)
                         }
                     )
                 }
                 composable(Routes.DISCOVER_SCREEN) {
                     DiscoverScreen(
-                        onUserClick = { userId -> appNavController.navigate("${Routes.PROFILE_SCREEN}/$userId") }
+                        onUserClick = { userId -> navController.navigate("${Routes.PROFILE_SCREEN}/$userId") }
                     )
                 }
-                composable(Routes.AI_CHAT_SCREEN) {
-                    AiChatScreen(onNavigateBack = { navController.popBackStack() })
+                composable(Routes.NOTIFICATIONS_SCREEN) {
+                    NotificationsScreen(
+                        onNotificationClick = { postId -> navController.navigate("${Routes.POST_SCREEN}/$postId") },
+                        onUserClick = { userId -> navController.navigate("${Routes.PROFILE_SCREEN}/$userId") },
+                        onSettingsClick = { navController.navigate(Routes.SETTINGS_SCREEN) }
+                    )
                 }
                 composable(Routes.PROFILE_SCREEN) {
                     ProfileScreen(
-                        onEditProfile = { appNavController.navigate(Routes.EDIT_PROFILE_SCREEN) },
-                        onSettingsClick = { appNavController.navigate(Routes.SETTINGS_SCREEN) },
+                        onEditProfile = { navController.navigate(Routes.EDIT_PROFILE_SCREEN) },
+                        onSettingsClick = { navController.navigate(Routes.SETTINGS_SCREEN) },
                         onSignOut = {
                             appNavController.navigate(Routes.AUTH_SCREEN) {
                                 popUpTo(Routes.MAIN_SCREEN) { inclusive = true }
                             }
                         },
                         onBackClick = { navController.popBackStack() }
+                    )
+                }
+                composable(
+                    route = "${Routes.PROFILE_SCREEN}/{userId}",
+                    arguments = listOf(navArgument("userId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val userId = backStackEntry.arguments?.getString("userId")
+                    ProfileScreen(
+                        userId = userId,
+                        onEditProfile = {},
+                        onSettingsClick = {},
+                        onSignOut = {
+                            appNavController.navigate(Routes.AUTH_SCREEN) {
+                                popUpTo(Routes.MAIN_SCREEN) { inclusive = true }
+                            }
+                        },
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
+                composable(Routes.EDIT_PROFILE_SCREEN) {
+                    EditProfileScreen(
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+                composable(
+                    route = "${Routes.POST_SCREEN}/{postId}",
+                    arguments = listOf(navArgument("postId") { type = NavType.StringType })
+                ) { backStackEntry ->
+                    val postId = backStackEntry.arguments?.getString("postId")
+                    if (postId != null) {
+                        PostScreen(
+                            postId = postId,
+                            onNavigateBack = { navController.popBackStack() },
+                            onUserClick = { userId -> navController.navigate("${Routes.PROFILE_SCREEN}/$userId") },
+                            onCommentsClick = { appNavController.navigate("${Routes.COMMENTS_SCREEN}/$postId") }
+                        )
+                    }
+                }
+                composable(Routes.SETTINGS_SCREEN) {
+                    SettingsScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        onSignOut = {
+                            appNavController.navigate(Routes.AUTH_SCREEN) {
+                                popUpTo(Routes.MAIN_SCREEN) { inclusive = true }
+                            }
+                        }
                     )
                 }
             }

@@ -56,12 +56,11 @@ fun AppNavigation() {
         composable(
             route = "${Routes.CHAT_SCREEN}/{recipientId}",
             arguments = listOf(navArgument("recipientId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val recipientId = backStackEntry.arguments?.getString("recipientId")!!
+        ) {
             ChatScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToVideoCall = { navController.navigate("${Routes.VIDEO_CALL_SCREEN}/$recipientId") },
-                onNavigateToVoiceCall = { navController.navigate("${Routes.VOICE_CALL_SCREEN}/$recipientId") }
+                onNavigateToVideoCall = { recipientId -> navController.navigate("${Routes.VIDEO_CALL_SCREEN}/$recipientId") },
+                onNavigateToVoiceCall = { recipientId -> navController.navigate("${Routes.VOICE_CALL_SCREEN}/$recipientId") }
             )
         }
         composable(Routes.MESSAGES_SCREEN) {
