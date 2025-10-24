@@ -1,6 +1,7 @@
 package com.barry.circleme.ui.conversations
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,16 +10,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -68,8 +73,8 @@ fun ConversationsScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("Messages") },
-                navigationIcon = { 
+                title = { Text("Messages", fontWeight = FontWeight.SemiBold, fontSize = 20.sp) },
+                navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
@@ -83,38 +88,54 @@ fun ConversationsScreen(
         }
     ) { paddingValues ->
         Column(modifier = Modifier.padding(paddingValues)) {
-            TextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
+            // Search field wrapped in a Card to get a white pill with elevation like the design
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                placeholder = { Text("Search") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                shape = CircleShape,
-                colors = TextFieldDefaults.colors(
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .height(56.dp),
+                shape = RoundedCornerShape(28.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                // Use TextField with transparent container so the Card provides the white background
+                TextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 12.dp, end = 12.dp),
+                    placeholder = { Text("Search", color = Color(0xFF9AA0A6)) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF9AA0A6)) },
+                    shape = RoundedCornerShape(28.dp),
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedLeadingIconColor = Color(0xFF9AA0A6),
+                        unfocusedLeadingIconColor = Color(0xFF9AA0A6)
+                    )
                 )
-            )
-            LazyColumn {
+            }
+
+            LazyColumn(modifier = Modifier.fillMaxWidth(), content = {
                 items(conversations) { conversation ->
                     val unreadCount = conversation.unreadCount[currentUserId] ?: 0
-                    ConversationItem(
+                    ConversationCard(
                         conversation = conversation,
                         currentUserId = currentUserId ?: "",
                         unreadCount = unreadCount.toInt(),
                         onClick = { onConversationClick(it) }
                     )
-                    Divider(color = Color.LightGray)
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
-            }
+            })
         }
     }
 }
 
 @Composable
-fun ConversationItem(
+fun ConversationCard(
     conversation: Conversation,
     currentUserId: String,
     unreadCount: Int,
@@ -125,54 +146,70 @@ fun ConversationItem(
     val otherParticipantPhoto = conversation.participantPhotos?.get(otherParticipantId) ?: ""
     val isUnread = unreadCount > 0
 
-    Row(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick(otherParticipantId) }
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp)
+            .clickable { onClick(otherParticipantId) },
+        shape = RoundedCornerShape(28.dp), // pill shape
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
     ) {
-        AsyncImage(
-            model = otherParticipantPhoto,
-            contentDescription = "Profile picture of $otherParticipantName",
-            modifier = Modifier
-                .size(56.dp)
-                .clip(CircleShape),
-            contentScale = ContentScale.Crop
-        )
+        Row(modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
 
-        Spacer(modifier = Modifier.width(16.dp))
-
-        Column(modifier = Modifier.weight(1f)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                    text = otherParticipantName,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 17.sp
+            // avatar circular with light border like design
+            Box(modifier = Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .background(Color.White)
+                .border(1.dp, Color(0xFFEDF0F2), CircleShape), contentAlignment = Alignment.Center) {
+                AsyncImage(
+                    model = otherParticipantPhoto,
+                    contentDescription = "Profile picture of $otherParticipantName",
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
                 )
-                conversation.lastMessageTimestamp?.let {
-                    Text(
-                        text = TimeUtils.formatTimestamp(it),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
             }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(
-                    text = conversation.lastMessage,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                if (isUnread) {
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .background(MaterialTheme.colorScheme.primary, CircleShape)
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(
+                        text = otherParticipantName,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp
                     )
+                    conversation.lastMessageTimestamp?.let {
+                        Text(
+                            text = TimeUtils.formatTimestamp(it),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(
+                        text = conversation.lastMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    if (isUnread) {
+                        Box(modifier = Modifier
+                            .size(12.dp)
+                            .background(Color(0xFF7C4DFF), shape = CircleShape))
+                    }
                 }
             }
         }
