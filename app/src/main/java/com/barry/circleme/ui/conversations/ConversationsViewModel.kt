@@ -11,6 +11,7 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.util.Date
 
 class ConversationsViewModel : ViewModel() {
 
@@ -57,13 +58,33 @@ class ConversationsViewModel : ViewModel() {
             }
     }
 
-    fun startConversation(user: User, onComplete: (String) -> Unit) {
+    fun startConversation(user: User, initialMessage: String? = null, onComplete: (String) -> Unit) {
         val currentUser = auth.currentUser ?: return
         val currentUserId = currentUser.uid
         val otherUserId = user.uid
 
         val conversationId = getConversationId(currentUserId, otherUserId)
         val conversationRef = firestore.collection("conversations").document(conversationId)
+
+        // Optimistic local update: create a Conversation object and prepend it to the list so it appears immediately
+        val optimisticConversation = Conversation(
+            id = conversationId,
+            participantIds = listOf(currentUserId, otherUserId).sorted(),
+            participantNames = mapOf(
+                currentUserId to (currentUser.displayName ?: ""),
+                otherUserId to (user.displayName ?: "")
+            ),
+            participantPhotos = mapOf(
+                currentUserId to (currentUser.photoUrl?.toString() ?: ""),
+                otherUserId to (user.photoUrl ?: "")
+            ),
+            lastMessage = (initialMessage ?: ""),
+            lastMessageTimestamp = Date(),
+            unreadCount = mapOf(otherUserId to 1, currentUserId to 0)
+        )
+
+        // remove any existing conversation with same id and add the optimistic one at top
+        _conversations.value = listOf(optimisticConversation) + _conversations.value.filter { it.id != conversationId }
 
         val conversationData = mapOf(
             "id" to conversationId,
@@ -76,13 +97,45 @@ class ConversationsViewModel : ViewModel() {
                 currentUserId to (currentUser.photoUrl?.toString() ?: ""),
                 otherUserId to (user.photoUrl ?: "")
             ),
-            "lastMessage" to "",
+            "lastMessage" to (initialMessage ?: ""),
             "lastMessageTimestamp" to FieldValue.serverTimestamp()
         )
 
         conversationRef.set(conversationData, SetOptions.merge())
-            .addOnSuccessListener { 
-                onComplete(conversationId) 
+            .addOnSuccessListener {
+                if (!initialMessage.isNullOrBlank()) {
+                    val messageData = mapOf(
+                        "senderId" to currentUserId,
+                        "text" to initialMessage,
+                        "timestamp" to FieldValue.serverTimestamp()
+                    )
+                    // add message to subcollection
+                    conversationRef.collection("messages").add(messageData)
+                        .addOnSuccessListener {
+                            // update last message and unread count for the other participant
+                            val updates = mapOf<String, Any>(
+                                "lastMessage" to initialMessage,
+                                "lastMessageTimestamp" to FieldValue.serverTimestamp(),
+                                "unreadCount.$otherUserId" to FieldValue.increment(1)
+                            )
+                            conversationRef.set(updates, SetOptions.merge())
+                                .addOnSuccessListener {
+                                    onComplete(conversationId)
+                                }
+                                .addOnFailureListener {
+                                    // still call onComplete so caller can continue
+                                    onComplete(conversationId)
+                                }
+                        }
+                        .addOnFailureListener {
+                            onComplete(conversationId)
+                        }
+                } else {
+                    onComplete(conversationId)
+                }
+            }
+            .addOnFailureListener {
+                onComplete(conversationId)
             }
     }
     

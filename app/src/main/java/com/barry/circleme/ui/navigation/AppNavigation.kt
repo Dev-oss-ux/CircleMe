@@ -7,6 +7,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,6 +20,7 @@ import com.barry.circleme.ui.comments.CommentsScreen
 import com.barry.circleme.ui.conversations.ConversationsScreen
 import com.barry.circleme.ui.create_post.CreatePostScreen
 import com.barry.circleme.ui.new_conversation.NewConversationScreen
+import com.barry.circleme.ui.conversations.ConversationsViewModel
 import com.barry.circleme.ui.video_call.VideoCallScreen
 import com.barry.circleme.ui.voice_call.VoiceCallScreen
 import com.google.firebase.auth.ktx.auth
@@ -90,9 +93,14 @@ fun AppNavigation() {
             VideoCallScreen(onNavigateBack = { navController.popBackStack() })
         }
         composable(Routes.NEW_CONVERSATION_SCREEN) {
-            NewConversationScreen(onUserClick = { recipientId ->
-                navController.navigate("${Routes.CHAT_SCREEN}/$recipientId") {
-                    popUpTo(Routes.MESSAGES_SCREEN)
+            // Get the backStackEntry for Messages so we can share the same ConversationsViewModel instance
+            val parentEntry = remember(navController) { navController.getBackStackEntry(Routes.MESSAGES_SCREEN) }
+            val convViewModel: ConversationsViewModel = viewModel(parentEntry)
+
+            NewConversationScreen(onStartConversation = { user, initialMessage ->
+                convViewModel.startConversation(user, initialMessage) { conversationId ->
+                    // After creating conversation and optional initial message, return to Messages screen
+                    navController.popBackStack()
                 }
             })
         }
