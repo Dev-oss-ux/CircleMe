@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AgentMigrationStateService">
+    <option name="pendingSessionIds">
+      <option value="dcc5713b-7009-4626-ae85-443f2a7de2bb" />
+    </option>
+    <option name="pendingTurns">
+      <map>
+        <entry key="dcc5713b-7009-4626-ae85-443f2a7de2bb">
+          <value>
+            <set>
+              <option value="3bfb4f79-fa16-4dcf-b456-965a7607c418" />
+            </set>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <pendingWorkingSetItems>
+      <entry key="dcc5713b-7009-4626-ae85-443f2a7de2bb">
+        <set>
+          <option value="file://$PROJECT_DIR$/app/src/main/java/com/barry/circleme/ui/profile/ProfileScreen.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/com/barry/circleme/ui/new_conversation/NewConversationScreen.kt" />
+          <option value="file://$PROJECT_DIR$/app/src/main/java/com/barry/circleme/ui/navigation/AppNavigation.kt" />
+        </set>
+      </entry>
+    </pendingWorkingSetItems>
+  </component>
+</project>
